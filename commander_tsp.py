@@ -4,21 +4,19 @@ Usage:
 
 Option:
     -h --help                       show this screen.
-    --name=<str>                    name of experiment [default: ER_std]
+    --name=<str>                    name of experiment [default: tsp]
     --cpu=<str>                     use CPU [default: yes]
-    --generative_model=<str>        so far ErdosRenyi, Regular or BarabasiAlbert [default: ErdosRenyi]
-    --num_examples_train=<int>      [default: 20000]
+    --generative_model=<str>        so far Euclidean [default: Euclidean]
+    --num_examples_train=<int>      [default: 10000]
     --num_examples_test=<int>       [default: 10]
     --num_examples_val=<int>        [default: 1000]
-    --edge_density=<float>          [default: 0.2]
-    --noise=<float>                 [default: 0.05]
     --n_vertices=<int>              [default: 50]
     --path_dataset=<str>            path where datasets are stored [default: dataset]
     --root_dir=<str>                [default: .]
     --epoch=<int>                   [default: 5]
     --batch_size=<int>              [default: 32]
-    --arch=<str>                    [default: Siamese_Model]
-    --model_name=<str>              [default: Simple_Node_Embedding]
+    --arch=<str>                    [default: Edge_Predictor]
+    --model_name=<str>              [default: BaseModel]
     --num_blocks=<int>              number of blocks [default: 2]
     --original_features_num=<int>   [default: 2]
     --in_features=<int>             [default: 64]
@@ -26,7 +24,7 @@ Option:
     --depth_of_mlp=<int>            [default: 3]
     --print_freq=<int>              [default: 100]
     --lr=<float>                    learning rate [default: 1e-3]
-    --step=<int>                    scheduler step [default: 5]
+    --step=<int>                    scheduler step [default: 3]
     --lr_decay=<float>              scheduler decay [default: 0.9]
     --seed=<int>                    random seed [default: 42]
 
@@ -42,14 +40,14 @@ import torch
 from toolbox import logger, metrics
 from models import get_model
 from loaders.siamese_loaders import siamese_loader
-from loaders.data_generator import Generator
+from loaders.tsp_data import TSP
 from toolbox.optimizer import get_optimizer
 from toolbox.losses import get_criterion
 from toolbox import utils
-import trainer as trainer
+import trainer_tsp as trainer
 
 
-list_float = ['--lr', '--edge_density', '--lr_decay', '--noise']
+list_float = ['--lr', '--lr_decay']
 
 list_int = ['--num_blocks', '--original_features_num',
             '--in_features', '--out_features',
@@ -81,8 +79,8 @@ def type_args(args):
 
 def update_args(args):
     args['--log_dir'] = '{}/runs/{}/'.format(args['--root_dir'], args['--name'])
+    args['--loss'] = 'NLL'
     #args['--res_dir'] = '{}/runs/{}/res'.format(args['--root_dir'], args['--name'])
-    args['--loss'] = 'triplet_loss'
     return args
 
 def save_checkpoint(args, state, is_best, filename='checkpoint.pth.tar'):
@@ -124,16 +122,14 @@ def main():
     exp_logger = init_logger(args)
     
     print(args['--batch_size'])
-    gene_train = Generator('train', args)
-    _ = gene_train.load_dataset()
-    train_loader = siamese_loader(gene_train,args['--batch_size'])
-    gene_val = Generator('val', args)
-    _ = gene_val.load_dataset()
-    val_loader = siamese_loader(gene_val,args['--batch_size'])
+    dataset_train = TSP(args['--path_dataset'])
+    train_loader = siamese_loader(dataset_train,args['--batch_size'])
+    dataset_val = TSP(args['--path_dataset'],'val')
+    val_loader = siamese_loader(dataset_val,args['--batch_size'])
 
     model = get_model(args)
-    optimizer, scheduler = get_optimizer(args,model)
-    criterion = get_criterion(args,device)
+    optimizer, scheduler = get_optimizer(args, model)
+    criterion = get_criterion(args, device)
 
     exp_logger = init_logger(args)
 
@@ -142,11 +138,11 @@ def main():
     is_best = True
     for epoch in range(args['--epoch']):
         print('Current epoch: ', epoch)
-        trainer.train_triplet(train_loader,model,criterion,optimizer,exp_logger,device,epoch,eval_score=metrics.accuracy_max)
+        trainer.train_tsp(train_loader,model,criterion,optimizer,exp_logger,device,epoch,eval_score=metrics.gap_tsp)
         scheduler.step()
     #print(args['--num_examples_train'])
 
-        acc = trainer.val_triplet(val_loader,model,criterion,exp_logger,device,epoch,eval_score=metrics.accuracy_linear_assigment)
+        acc = trainer.val_tsp(val_loader,model,criterion,exp_logger,device,epoch,eval_score=metrics.gap_tsp)
 
         # remember best acc and save checkpoint
         is_best = acc > best_score

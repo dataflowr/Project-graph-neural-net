@@ -82,3 +82,18 @@ def accuracy_max(weights,labels=None):
         #print(preds)
         acc += np.sum(preds == labels[i,:])
     return acc, n, bs
+
+def gap_tsp(weights,labels,distances):
+    """
+    weights should be (bs,n,n) and labels (bs,n) numpy arrays
+    """
+    bs = weights.shape[0]
+    n = weights.shape[1]
+    diff = 0
+    for i in range(bs):
+        preds = np.argmax(weights[i,:,:], 0)
+        opt_tour = np.sum([distances[i,j,labels[i,j]] for j in range(n)])
+        pred_tour = np.sum([distances[i,j,preds[j]] for j in range(n)])
+        print(opt_tour,pred_tour)
+        diff += pred_tour-opt_tour
+    return diff, n, bs

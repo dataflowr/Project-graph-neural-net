@@ -19,5 +19,5 @@ class triplet_loss(nn.Module):
         out_reshape = out.view(-1,n_vertices)
         return self.loss(out_reshape,target)
 
-def get_criterion(device):
-    return triplet_loss(device)
+def get_criterion(args,device):
+    return {'triplet_loss': triplet_loss(device), 'NLL': nn.NLLLoss()}[args['--loss']]

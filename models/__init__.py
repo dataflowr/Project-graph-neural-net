@@ -1,4 +1,5 @@
 from models.siamese_net import Siamese_Model
+from models.edge_predictor import Edge_Predictor
 
 def get_model(args):
     model_instance = _get_model_instance(args['--arch'])
@@ -12,4 +13,4 @@ def get_model(args):
     return model
 
 def _get_model_instance(arch):
-    return {'Siamese_Model': Siamese_Model}[arch]
+    return {'Siamese_Model': Siamese_Model, 'Edge_Predictor': Edge_Predictor}[arch]
