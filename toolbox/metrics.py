@@ -83,6 +83,18 @@ def accuracy_max(weights,labels=None):
         acc += np.sum(preds == labels[i,:])
     return acc, n, bs
 
+def f1_score(preds,labels):
+    bs = len(preds)
+    n = len(preds[0])
+    pos = 0
+    for i in range(bs):
+        pos += np.sum(preds[i][0,:] == labels[i][0,:])
+        pos += np.sum(preds[i][1,:] == labels[i][1,:])
+    prec = pos/2*n
+    recall = 0
+    return pos, n, bs
+
+
 def gap_tsp(weights,labels,distances):
     """
     weights should be (bs,n,n) and labels (bs,n) numpy arrays

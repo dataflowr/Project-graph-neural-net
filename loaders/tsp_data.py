@@ -41,15 +41,31 @@ class TSP(Dataset):
             # Determine k-nearest neighbors for each node
             #knns = np.argpartition(W_val, kth=self.num_neighbors, axis=-1)[:, self.num_neighbors::-1]
             W_tensor = torch.as_tensor(W_val, dtype=torch.float)
-            # Convert tour nodes to required format
-            tour_nodes = [int(node) - 1 for node in line[line.index('output') + 1:-1]]
+            ## Convert tour nodes to required format
+            #tour_nodes = [int(node) - 1 for node in line[line.index('output') + 1:-1]]
 
-            edge_labels = [-1]*num_nodes
-            for idx in range(len(tour_nodes)-1):
-                edge_labels[tour_nodes[idx]] = tour_nodes[idx+1]
+            #edge_labels = -np.ones((num_nodes,2))
+            #for idx in range(len(tour_nodes)-1):
+            #    edge_labels[tour_nodes[idx],0] = tour_nodes[idx+1]
+            #    edge_labels[tour_nodes[idx],1] = tour_nodes[idx-1]
                 
+            # Convert tour nodes to required format
+            # Don't add final connection for tour/cycle
+            tour_nodes = [int(node) - 1 for node in line[line.index('output') + 1:-1]][:-1]
+
+            # Compute an edge adjacency matrix representation of tour
+            edges_target = np.zeros((num_nodes, num_nodes))
+            for idx in range(len(tour_nodes) - 1):
+                i = tour_nodes[idx]
+                j = tour_nodes[idx + 1]
+                edges_target[i][j] = 1
+                edges_target[j][i] = 1
+            ## Add final connection of tour in edge target
+            edges_target[j][tour_nodes[0]] = 1
+            edges_target[tour_nodes[0]][j] = 1
+
             self.graph_lists.append(adjacency_matrix_to_tensor_representation(W_tensor))
-            self.edge_labels.append(torch.as_tensor(edge_labels))
+            self.edge_labels.append(torch.as_tensor(edges_target))
 
     def __len__(self):
         """Return the number of graphs in the dataset."""

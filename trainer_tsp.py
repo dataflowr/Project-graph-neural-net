@@ -1,4 +1,6 @@
 import time
+import torch
+import numpy as np
 
 def train_tsp(train_loader,model,criterion,optimizer,
                 logger,device,epoch,eval_score=None,print_freq=100):
@@ -17,8 +19,10 @@ def train_tsp(train_loader,model,criterion,optimizer,
         input = input.to(device)
         target = target.to(device)
         output = model(input)
+        #print('output',output.shape,target.shape)
+        
 
-        loss = criterion(output.view(-1,num_nodes),target.view(-1))
+        loss = criterion(output,target)#.view(-1,num_nodes),target.view(-1))
         meters['loss'].update(loss.data.item(), n=1)
         
         optimizer.zero_grad()
@@ -33,12 +37,16 @@ def train_tsp(train_loader,model,criterion,optimizer,
         if i % print_freq == 0:
             if eval_score is not None:
                 np_out = output.cpu().detach().numpy()
+                np_pred = np.argsort(-np_out, axis=2)[:,:,:2]
+                np_pred = [np.asarray([[i,j] if i<j else [j,i] for [i,j] in t]) for t in np_pred]
                 np_target = target.cpu().detach().numpy()
+                np_target = np.argsort(-np_target, axis=2)[:,:,:2]
+                np_target = [np.asarray([[i,j] if i<j else [j,i] for [i,j] in t]) for t in np_target]
                 np_input = input[:,:,:,1].cpu().detach().numpy()
-                #print(np_out.shape)
-                acc_max, n, bs = eval_score(np_out,np_target,np_input)
+                #print(np_pred,np_target.shape)
+                acc_max, n, bs = eval_score(np_pred,np_target)#,np_input)
                 #print(acc_max, n, bs)
-                meters['acc_max'].update(acc_max,n*bs)
+                meters['acc_max'].update(acc_max,(n*2)*bs)
             print('Epoch: [{0}][{1}/{2}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
@@ -63,17 +71,21 @@ def val_tsp(val_loader,model,criterion,
         target = target.to(device)
         output = model(input)
 
-        loss = criterion(output.view(-1,num_nodes),target.view(-1))
+        loss = criterion(output,target)#.view(-1,num_nodes),target.view(-1))
         meters['loss'].update(loss.data.item(), n=1)
     
         if eval_score is not None:
             np_out = output.cpu().detach().numpy()
+            np_pred = np.argsort(-np_out, axis=2)[:,:,:2]
+            np_pred = [np.asarray([[i,j] if i<j else [j,i] for [i,j] in t]) for t in np_pred]
             np_target = target.cpu().detach().numpy()
+            np_target = np.argsort(-np_target, axis=2)[:,:,:2]
+            np_target = [np.asarray([[i,j] if i<j else [j,i] for [i,j] in t]) for t in np_target]
             np_input = input[:,:,:,1].cpu().detach().numpy()
                 #print(np_out.shape)
-            acc, n, bs = eval_score(np_out, np_target,np_input)
+            acc, n, bs = eval_score(np_pred, np_target)#,np_input)
                 #print(acc_max, n, bs)
-            meters['acc_la'].update(acc,n*bs)
+            meters['acc_la'].update(acc,(n*2)*bs)
         if i % print_freq == 0:
             print('Validation set, epoch: [{0}][{1}/{2}]\t'
                     'Loss {loss.val:.4f} ({loss.avg:.4f})\t'

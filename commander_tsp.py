@@ -24,7 +24,7 @@ Option:
     --depth_of_mlp=<int>            [default: 3]
     --print_freq=<int>              [default: 100]
     --lr=<float>                    learning rate [default: 1e-3]
-    --step=<int>                    scheduler step [default: 3]
+    --step=<int>                    scheduler step [default: 5]
     --lr_decay=<float>              scheduler decay [default: 0.9]
     --seed=<int>                    random seed [default: 42]
 
@@ -79,7 +79,7 @@ def type_args(args):
 
 def update_args(args):
     args['--log_dir'] = '{}/runs/{}/'.format(args['--root_dir'], args['--name'])
-    args['--loss'] = 'NLL'
+    args['--loss'] = 'BCE'
     #args['--res_dir'] = '{}/runs/{}/res'.format(args['--root_dir'], args['--name'])
     return args
 
@@ -130,7 +130,7 @@ def main():
     model = get_model(args)
     optimizer, scheduler = get_optimizer(args, model)
     criterion = get_criterion(args, device)
-
+    #print(args['--loss'],criterion)
     exp_logger = init_logger(args)
 
     model.to(device)
@@ -138,11 +138,11 @@ def main():
     is_best = True
     for epoch in range(args['--epoch']):
         print('Current epoch: ', epoch)
-        trainer.train_tsp(train_loader,model,criterion,optimizer,exp_logger,device,epoch,eval_score=metrics.gap_tsp)
+        trainer.train_tsp(train_loader,model,criterion,optimizer,exp_logger,device,epoch,eval_score=metrics.f1_score)
         scheduler.step()
     #print(args['--num_examples_train'])
 
-        acc = trainer.val_tsp(val_loader,model,criterion,exp_logger,device,epoch,eval_score=metrics.gap_tsp)
+        acc = trainer.val_tsp(val_loader,model,criterion,exp_logger,device,epoch,eval_score=metrics.f1_score)
 
         # remember best acc and save checkpoint
         is_best = acc > best_score

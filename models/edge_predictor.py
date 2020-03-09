@@ -20,8 +20,8 @@ class Edge_Predictor(nn.Module):
         self.out_features = out_features
         self.depth_of_mlp =depth_of_mlp
         self.edge_embedder = BaseModel(original_features_num, num_blocks, in_features,out_features, depth_of_mlp)
-
+        
     def forward(self, x1):
         x1 = self.edge_embedder(x1)
-        raw_scores = torch.max(x1,3)[0]
-        return F.log_softmax(raw_scores, dim = 2)
+        raw_scores1 = torch.mean(x1,3)#[0]
+        return raw_scores1#F.log_softmax(raw_scores1, dim = 2)
