@@ -20,4 +20,7 @@ class triplet_loss(nn.Module):
         return self.loss(out_reshape,target)
 
 def get_criterion(args,device):
-    return {'triplet_loss': triplet_loss(device), 'NLL': nn.NLLLoss()}[args['--loss']]
+    pos_weight = torch.tensor([48]).to(device)
+
+    return {'triplet_loss': triplet_loss(device), 'NLL': nn.NLLLoss(),
+    'BCE': nn.BCEWithLogitsLoss(pos_weight = pos_weight)}[args['--loss']]
