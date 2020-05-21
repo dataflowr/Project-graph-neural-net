@@ -1,6 +1,7 @@
 import time
 import torch
 import numpy as np
+from toolbox.metrics import transform_cycles
 
 def train_tsp(train_loader,model,criterion,optimizer,
                 logger,device,epoch,eval_score=None,print_freq=100):
@@ -18,6 +19,7 @@ def train_tsp(train_loader,model,criterion,optimizer,
 
         input = input.to(device)
         target = target.to(device)
+        target = target.type(torch.float32)
         output = model(input)
         #print('output',output.shape,target.shape)
         
@@ -36,17 +38,19 @@ def train_tsp(train_loader,model,criterion,optimizer,
     
         if i % print_freq == 0:
             if eval_score is not None:
-                np_out = output.cpu().detach().numpy()
-                np_pred = np.argsort(-np_out, axis=2)[:,:,:2]
-                np_pred = [np.asarray([[i,j] if i<j else [j,i] for [i,j] in t]) for t in np_pred]
-                np_target = target.cpu().detach().numpy()
-                np_target = np.argsort(-np_target, axis=2)[:,:,:2]
-                np_target = [np.asarray([[i,j] if i<j else [j,i] for [i,j] in t]) for t in np_target]
-                np_input = input[:,:,:,1].cpu().detach().numpy()
+                #np_out = output.cpu().detach().numpy()
+                #np_pred = np.argsort(-np_out, axis=2)[:,:,:2]
+                #np_pred = [np.asarray([[i,j] if i<j else [j,i] for [i,j] in t]) for t in np_pred]
+                #np_target = target.cpu().detach().numpy()
+                #np_target = np.argsort(-np_target, axis=2)[:,:,:2]
+                #np_target = [np.asarray([[i,j] if i<j else [j,i] for [i,j] in t]) for t in np_target]
+                #np_input = input[:,:,:,1].cpu().detach().numpy()
                 #print(np_pred,np_target.shape)
-                acc_max, n, bs = eval_score(np_pred,np_target)#,np_input)
+                #acc_max, n, bs = eval_score(np_pred,np_target)#,np_input)
+                prec, rec, f1 = eval_score(transform_cycles(1-(output)),target)
                 #print(acc_max, n, bs)
-                meters['acc_max'].update(acc_max,(n*2)*bs)
+                #print(prec,rec,f1)
+                meters['acc_max'].update(f1)
             print('Epoch: [{0}][{1}/{2}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
@@ -69,23 +73,26 @@ def val_tsp(val_loader,model,criterion,
         num_nodes = input.shape[1]
         input = input.to(device)
         target = target.to(device)
+        target = target.type(torch.float32)
         output = model(input)
 
         loss = criterion(output,target)#.view(-1,num_nodes),target.view(-1))
         meters['loss'].update(loss.data.item(), n=1)
     
         if eval_score is not None:
-            np_out = output.cpu().detach().numpy()
-            np_pred = np.argsort(-np_out, axis=2)[:,:,:2]
-            np_pred = [np.asarray([[i,j] if i<j else [j,i] for [i,j] in t]) for t in np_pred]
-            np_target = target.cpu().detach().numpy()
-            np_target = np.argsort(-np_target, axis=2)[:,:,:2]
-            np_target = [np.asarray([[i,j] if i<j else [j,i] for [i,j] in t]) for t in np_target]
-            np_input = input[:,:,:,1].cpu().detach().numpy()
+            #np_out = output.cpu().detach().numpy()
+            #np_pred = np.argsort(-np_out, axis=2)[:,:,:2]
+            #np_pred = [np.asarray([[i,j] if i<j else [j,i] for [i,j] in t]) for t in np_pred]
+            #np_target = target.cpu().detach().numpy()
+            #np_target = np.argsort(-np_target, axis=2)[:,:,:2]
+            #np_target = [np.asarray([[i,j] if i<j else [j,i] for [i,j] in t]) for t in np_target]
+            #np_input = input[:,:,:,1].cpu().detach().numpy()
                 #print(np_out.shape)
-            acc, n, bs = eval_score(np_pred, np_target)#,np_input)
+            #acc, n, bs = eval_score(np_pred, np_target)#,np_input)
                 #print(acc_max, n, bs)
-            meters['acc_la'].update(acc,(n*2)*bs)
+            prec, rec, f1 = eval_score(transform_cycles(1-(output)),target)
+            #print(prec,rec,f1)
+            meters['acc_la'].update(f1)
         if i % print_freq == 0:
             print('Validation set, epoch: [{0}][{1}/{2}]\t'
                     'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
@@ -93,4 +100,4 @@ def val_tsp(val_loader,model,criterion,
                     epoch, i, len(val_loader), loss=meters['loss'], acc=meters['acc_la']))
 
     logger.log_meters('val', n=epoch)
-    return acc
+    return f1

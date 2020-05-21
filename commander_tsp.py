@@ -130,7 +130,7 @@ def main():
     model = get_model(args)
     optimizer, scheduler = get_optimizer(args, model)
     criterion = get_criterion(args, device)
-    #print(args['--loss'],criterion)
+    print(args['--loss'],criterion)
     exp_logger = init_logger(args)
 
     model.to(device)

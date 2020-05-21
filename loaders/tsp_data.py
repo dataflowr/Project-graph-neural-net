@@ -64,7 +64,7 @@ class TSP(Dataset):
             edges_target[j][tour_nodes[0]] = 1
             edges_target[tour_nodes[0]][j] = 1
 
-            self.graph_lists.append(adjacency_matrix_to_tensor_representation(W_tensor))
+            self.graph_lists.append(adjacency_matrix_to_tensor_representation(W_tensor,False))
             self.edge_labels.append(torch.as_tensor(edges_target))
 
     def __len__(self):

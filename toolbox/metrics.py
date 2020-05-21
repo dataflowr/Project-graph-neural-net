@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 from scipy.optimize import linear_sum_assignment
 
@@ -83,16 +84,38 @@ def accuracy_max(weights,labels=None):
         acc += np.sum(preds == labels[i,:])
     return acc, n, bs
 
-def f1_score(preds,labels):
-    bs = len(preds)
-    n = len(preds[0])
-    pos = 0
+def transform_cycles(batch,num_neighbors=2):
+    bs, n_nodes, _ = batch.shape
+    adjacency = torch.zeros((bs,n_nodes,n_nodes))
     for i in range(bs):
-        pos += np.sum(preds[i][0,:] == labels[i][0,:])
-        pos += np.sum(preds[i][1,:] == labels[i][1,:])
-    prec = pos/2*n
-    recall = 0
-    return pos, n, bs
+        W_val = batch[i,:,:].cpu().detach().numpy()
+        knns = np.argpartition(W_val, kth=2, axis=-1)[:, num_neighbors::-1]
+        for j in range(n_nodes):
+            [*u,w] = knns[j,:]
+            for v in u:
+                adjacency[i,v,w] = 1
+                adjacency[i,w,v] = 1
+            #adjacency[i,v,w] = 1
+            #adjacency[i,w,v] = 1
+    return adjacency
+
+def f1_score(preds,labels):
+    """
+    take 2 adjacency matrices and compute precision, recall, f1_score for a tour
+    """
+    bs, n_nodes ,_  = labels.shape
+    #n = len(preds[0])
+    true_pos = 0
+    false_pos = 0
+    for i in range(bs):
+        true_pos += torch.sum(preds[i,:,:]*labels[i,:,:].cpu()).item()
+        false_pos += torch.sum(preds[i,:,:]*(1-labels[i,:,:].cpu())).item()
+        #pos += np.sum(preds[i][0,:] == labels[i][0,:])
+        #pos += np.sum(preds[i][1,:] == labels[i][1,:])
+    #prec = pos/2*n
+    prec = true_pos/(true_pos+false_pos)
+    rec = true_pos/(2*n_nodes*bs)
+    return prec, rec, 2*prec*rec/(prec+rec)#, n, bs
 
 
 def gap_tsp(weights,labels,distances):
