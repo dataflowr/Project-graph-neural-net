@@ -26,7 +26,7 @@ class BaseModel(nn.Module):
             mlp_block = RegularBlock(last_layer_features, in_features, self.depth_of_mlp, self.freeze_mlp[i])
             self.reg_blocks.append(mlp_block)
             last_layer_features = in_features
-        mlp_block = RegularBlock(in_features,out_features,depth_of_mlp, 0)
+        mlp_block = RegularBlock(in_features,out_features,depth_of_mlp, self.freeze_mlp[self.num_blocks])
         self.reg_blocks.append(mlp_block)
 
     def forward(self, x):
