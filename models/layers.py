@@ -10,12 +10,22 @@ class RegularBlock(nn.Module):
     and pass the concatenation of this result with the input through a MLP
     with no activation for the last layer.
     """
-    def __init__(self, in_features, out_features, depth_of_mlp):
+    def __init__(self, in_features, out_features, depth_of_mlp, num_freeze_mlp):
         super().__init__()
 
+        bool_freeze = [True if i<num_freeze_mlp else False for i in range(3)]
         self.mlp1 = MlpBlock(in_features, out_features, depth_of_mlp)
         self.mlp2 = MlpBlock(in_features, out_features, depth_of_mlp)
         self.mlp3 = MlpBlock(in_features+out_features, out_features,depth_of_mlp)
+        if bool_freeze[0]:
+            for param in self.mlp1.parameters():
+                param.requires_grad = False
+        if bool_freeze[1]:
+            for param in self.mlp2.parameters():
+                param.requires_grad = False
+        if bool_freeze[2]:
+            for param in self.mlp3.parameters():
+                param.requires_grad = False
         self.last_layer = nn.Conv2d(out_features,out_features,kernel_size=1, padding=0, bias=True)
 
     def forward(self, inputs):
