@@ -1,6 +1,6 @@
 ---
 name: Reg-ER-100
-cpu: Yes
+cpu: No
 root_dir: .
 
 train_data: # Train data related parameters
