@@ -150,9 +150,25 @@ def train(cpu, train_data, train, arch, log_dir):
 
     model = get_model(arch)
 
-    print(0, model.node_embedder.base_model.reg_blocks)
-    print(1, model.node_embedder.base_model.reg_blocks[0])
-    model.node_embedder.base_model.reg_blocks[0].requires_grad = False
+    # print(model)
+
+    # for param in model.node_embedder.base_model.reg_blocks[0].mlp1.convs[0].parameters():
+    #     param.requires_grad = False
+
+    # for param in model.node_embedder.base_model.reg_blocks[0].mlp2.convs[0].parameters():
+    #     param.requires_grad = False
+
+    # for param in model.node_embedder.base_model.reg_blocks[0].mlp3.convs[0].parameters():
+    #     param.requires_grad = False
+
+    # for param in model.node_embedder.base_model.reg_blocks[1].mlp1.convs[0].parameters():
+    #     param.requires_grad = False
+
+    # for param in model.node_embedder.base_model.reg_blocks[1].mlp2.convs[0].parameters():
+    #     param.requires_grad = False
+
+    # for param in model.node_embedder.base_model.reg_blocks[1].mlp3.convs[0].parameters():
+    #     param.requires_grad = False
 
     optimizer, scheduler = get_optimizer(train, model)
     criterion = get_criterion(device, train["loss_reduction"])

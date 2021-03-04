@@ -11,7 +11,7 @@ train_data: # Train data related parameters
   edge_density: 0.2
   n_vertices: 25
   vertex_proba: 1. # Parameter of the binomial distribution of vertices
-  noise: 0.05
+  noise: 0.1
   path_dataset: dataset # Path where datasets are stored
 
 test_data: # Test data related parameters
@@ -21,7 +21,7 @@ test_data: # Test data related parameters
   edge_density: 0.2
   n_vertices: 25
   vertex_proba: 1. # Parameter of the binomial distribution of vertices
-  noise: 0.05
+  noise: 0.1
   path_dataset: dataset # Path where datasets are stored
 
 train: # Training parameters
@@ -40,8 +40,8 @@ arch: # Architecture and model
   model_name: Simple_Node_Embedding
   num_blocks: 2
   original_features_num: 2
-  in_features: 64
-  out_features: 64
+  in_features: 128
+  out_features: 128
   depth_of_mlp: 3
 
 observers:
