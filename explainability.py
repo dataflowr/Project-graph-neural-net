@@ -13,8 +13,7 @@ import torch
 from sklearn.manifold import TSNE
 import numpy as np
 
-data = list (torch.load("dataset/QAP_ErdosRenyi_ErdosRenyi_1000_25_1.0_0.05_0.2/val.pkl"))
-
+data_path = "dataset/QAP_steps_ErdosRenyi_100_25_1.0_0.1_0.2/test.pkl"
 model_path = "runs/Reg-ER-100/QAP_ErdosRenyi_ErdosRenyi_25_1.0_0.05_0.2"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -52,10 +51,16 @@ def embed(g1,g2, model):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("-i", default=randint(0, len(data)-1), help="Id of the data point to use. by default, use random")
+    parser.add_argument("-i", default=None, help="Id of the data point to use. by default, use random")
     parser.add_argument("-m", help="Path to model to load", default = model_path)
+    parser.add_argument("-d", help="Path to data to load", default = data_path)
+
     args = parser.parse_args()
-    
+    print("Using data from " + args.d)
+    data = list (torch.load(args.d))
+
+    if args.i is None :
+        args.i = randint(0, len(data)-1)
 
     with open(os.path.join(model_path,"config.json")) as reader :
         cfg = json.load(reader)

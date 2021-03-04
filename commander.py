@@ -228,7 +228,7 @@ def load_model(model, device, model_path):
         model.load_state_dict(checkpoint["state_dict"])
         return model
     else:
-        raise RuntimeError("Model does not exist!")
+        raise RuntimeError(f"Model {model_path} does not exist!")
 
 
 def save_to_json(key, acc, loss, filename):
@@ -266,7 +266,7 @@ def eval(name, cpu, test_data, train, arch, log_dir, model_path, output_filename
 
     model = get_model(arch)
     model.to(device)
-    model = load_model(model, device)
+    model = load_model(model, device, model_path) # modified to add model_path. may not be a good idea for normal use
 
     criterion = get_criterion(device, train["loss_reduction"])
     exp_logger = logger.Experiment(name)
@@ -290,7 +290,15 @@ def eval(name, cpu, test_data, train, arch, log_dir, model_path, output_filename
     print("Saving result at: ", filename_test)
     save_to_json(key, acc, loss, filename_test)
 
+@ex.command
+def generate_data(test_data):
+    print(test_data)
+    gene = Generator("test", test_data)
+    gene.load_dataset()
 
 @ex.automain
 def main():
+    print("Main does nothing")
     pass
+
+
