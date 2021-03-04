@@ -5,6 +5,9 @@
 *.pt
 *.py.swp
 .ipynb_checkpoints/
+dataset/
+downloads/
+runs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
