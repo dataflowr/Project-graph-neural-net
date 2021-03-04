@@ -1,6 +1,7 @@
 - Save graphs 
 - Load model
-- Get node embeddings 
+- Get node embeddings
+    - get a graph 
 - t-SNE the embeddings
 - display this
     - Draw graphs with positions in R2

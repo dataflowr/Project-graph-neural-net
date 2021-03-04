@@ -10,6 +10,8 @@ from models import get_model
 import json
 import os
 import torch
+from sklearn.manifold import TSNE
+import numpy as np
 
 data = list (torch.load("dataset/QAP_ErdosRenyi_ErdosRenyi_1000_25_1.0_0.05_0.2/val.pkl"))
 
@@ -18,18 +20,15 @@ model_path = "runs/Reg-ER-100/QAP_ErdosRenyi_ErdosRenyi_25_1.0_0.05_0.2"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 def get_embeddings(model, g1, g2):
-    """Take g1, g2 1-batches of graph"""
+    """Take g1, g2 1-batches of graph
+    returns embeddings of shape (1,n, embed_dim)"""
     embeddings = []
     handle = model.node_embedder.register_forward_hook(lambda module, inp, outp : embeddings.append(outp))
     model(g1,g2)
     handle.remove()
     return embeddings
 
-if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument("-i", default=randint(0, len(data)-1), help="Id of the data point to use. by default, use random")
-    parser.add_argument("-m", help="Path to model to load", default = model_path)
-    args = parser.parse_args()
+def get_graphs(data, i, device):
     print(f"Using data point nb {args.i}")
     g1, g2 = data[args.i] #graphs !
     g1.unsqueeze_(0) #batches of 1
@@ -38,6 +37,26 @@ if __name__ == "__main__":
     g1 = g1.to(device)
     g2 = g2.to(device)
 
+    return g1,g2
+
+
+def embed(g1,g2, model):
+    e1, e2 = get_embeddings(model, g1, g2)
+    e = torch.cat((e1,e2), axis = 1)
+    tsne = TSNE()
+    v = tsne.fit_transform(e.cpu().detach().squeeze().numpy())
+    _,n,_ = e1.shape
+    v1 = v[:n, :]
+    v2 = v[n:, :]
+    return v1, v2
+
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("-i", default=randint(0, len(data)-1), help="Id of the data point to use. by default, use random")
+    parser.add_argument("-m", help="Path to model to load", default = model_path)
+    args = parser.parse_args()
+    
+
     with open(os.path.join(model_path,"config.json")) as reader :
         cfg = json.load(reader)
 
@@ -45,7 +64,13 @@ if __name__ == "__main__":
     model.eval()
     model.to(device)
     model = load_model(model, device, os.path.join(model_path,"model_best.pth.tar"))
-    
-    emb, _ = get_embeddings(model, g1, g2)
-    print(emb.shape)
+    g1,g2 = get_graphs(data,args.i, device)
+
+    e1, e2 = embed(g1, g2, model)
+    #embeddings
+    np.save("embeds/g1/embeds", e1)
+    np.save("embeds/g2/embeds", e2)
+    #original graphs
+    np.save("embeds/g1/graph", g1.detach().cpu().numpy())
+    np.save("embeds/g2/graph", g2.detach().cpu().numpy())
 
