@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from models.base_model import Simple_Node_Embedding
 
 class Siamese_Model(nn.Module):
-    def __init__(self, original_features_num, num_blocks, in_features,out_features, depth_of_mlp):
+    def __init__(self, original_features_num, num_blocks, in_features,out_features, depth_of_mlp, freeze_mlp):
         """
         take a batch of pair of graphs 
         ((bs, n_vertices, n_vertices, in_features) (bs,n_vertices, n_vertices, in_features))
@@ -19,7 +19,7 @@ class Siamese_Model(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         self.depth_of_mlp =depth_of_mlp
-        self.node_embedder = Simple_Node_Embedding(original_features_num, num_blocks, in_features,out_features, depth_of_mlp)
+        self.node_embedder = Simple_Node_Embedding(original_features_num, num_blocks, in_features,out_features, depth_of_mlp, freeze_mlp)
 
     def forward(self, x1, x2):
         x1 = self.node_embedder(x1)
