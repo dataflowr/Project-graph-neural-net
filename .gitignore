@@ -9,6 +9,8 @@ dataset/
 downloads/
 runs/
 .vscode/
+configs/configs_to_run/*
+configs/configs_computed/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

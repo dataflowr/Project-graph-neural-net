@@ -4,24 +4,30 @@
 #include <mpi.h>
 #include <string.h>
 #include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
-
 /// Function from https://stackoverflow.com/a/2736841
-char *remove_ext (char* myStr) {
+char *remove_ext(char *myStr)
+{
     char *retStr, *lastExt, *lastPath;
     char extSep = '.';
     char pathSep = '/';
 
-    if (myStr == NULL) return NULL;
-    if ((retStr = malloc (strlen (myStr) + 1)) == NULL) return NULL;
+    if (myStr == NULL)
+        return NULL;
+    if ((retStr = malloc(strlen(myStr) + 1)) == NULL)
+        return NULL;
 
-    strcpy (retStr, myStr);
-    lastExt = strrchr (retStr, extSep);
-    lastPath = (pathSep == 0) ? NULL : strrchr (retStr, pathSep);
+    strcpy(retStr, myStr);
+    lastExt = strrchr(retStr, extSep);
+    lastPath = (pathSep == 0) ? NULL : strrchr(retStr, pathSep);
 
-    if (lastExt != NULL) {
-        if (lastPath != NULL){
+    if (lastExt != NULL)
+    {
+        if (lastPath != NULL)
+        {
             if (lastPath < lastExt)
                 *lastExt = '\0';
         }
@@ -43,15 +49,17 @@ int main(int argc, char **argv)
 
     const char folderConfigFilesToRun[] = "./configs/configs_to_run/";
     const char folderConfigFilesComputed[] = "./configs/configs_computed/";
-    
+
     // First we count how many config files we have to run
     int nbConfigFiles = 0;
     DIR *d;
     struct dirent *dir;
     d = opendir(folderConfigFilesToRun);
-    if (d) {
-        while ((dir = readdir(d)) != NULL) {
-            char* ext = strrchr(dir->d_name, '.');
+    if (d)
+    {
+        while ((dir = readdir(d)) != NULL)
+        {
+            char *ext = strrchr(dir->d_name, '.');
             if (ext != NULL && strcmp(ext, ".yaml") == 0)
                 nbConfigFiles++;
         }
@@ -62,10 +70,13 @@ int main(int argc, char **argv)
     char **fileList = malloc(nbConfigFiles * sizeof(char *));
     int i = 0;
     d = opendir(folderConfigFilesToRun);
-    if (d) {
-        while ((dir = readdir(d)) != NULL) {
-            char* ext = strrchr(dir->d_name, '.');
-            if (ext != NULL && strcmp(ext, ".yaml") == 0){
+    if (d)
+    {
+        while ((dir = readdir(d)) != NULL)
+        {
+            char *ext = strrchr(dir->d_name, '.');
+            if (ext != NULL && strcmp(ext, ".yaml") == 0)
+            {
                 fileList[i] = strdup(dir->d_name);
                 i++;
             }
@@ -74,15 +85,25 @@ int main(int argc, char **argv)
     }
 
     // Each of the MPI process run their associated config files
-    for (i = rank; i < nbConfigFiles; i += size){
+    for (i = rank; i < nbConfigFiles; i += size)
+    {
+        // Creates the directory if needed
+        char dirComputed[500];
+        strcpy(dirComputed, folderConfigFilesComputed);
+        strcat(dirComputed, remove_ext(fileList[i]));
+        strcat(dirComputed, "/");
+        struct stat st = {0};
+        if (stat(dirComputed, &st) == -1)
+            mkdir(dirComputed, 0700);
+
         // Creates the log file associated to the current config file
         char logFile[500];
-        strcpy(logFile, folderConfigFilesComputed);
+        strcpy(logFile, dirComputed);
         strcat(logFile, remove_ext(fileList[i]));
         strcat(logFile, ".log");
 
         // Redirects everything printed into the log file
-        freopen(logFile,"w",stdout);
+        freopen(logFile, "w", stdout);
         dup2(fileno(stdout), fileno(stderr));
 
         // Starts the training with the current config file
@@ -92,18 +113,23 @@ int main(int argc, char **argv)
         system(cmd);
 
         // Closes the redirection to the log file
-        fclose (stdout);
-        
+        fclose(stdout);
+        fclose(stderr);
+
         // Relocates the computed file in the computed config files folder
         char fileSrc[500];
         strcpy(fileSrc, folderConfigFilesToRun);
         strcat(fileSrc, fileList[i]);
         char fileDest[500];
-        strcpy(fileDest, folderConfigFilesComputed);
+        strcpy(fileDest, dirComputed);
         strcat(fileDest, fileList[i]);
         rename(fileSrc, fileDest);
-    }
 
+        // Generates the plot associated to the current training
+        char cmd2[500] = "python3 configs/results_analyser.py -plot ";
+        strcat(cmd2, remove_ext(fileList[i]));
+        system(cmd2);
+    }
 
     MPI_Finalize();
     return 0;
