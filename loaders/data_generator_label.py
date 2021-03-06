@@ -62,41 +62,45 @@ def merge_graphs(name):
     return decorator
 
 @merge_graphs("ErdosRenyi")
-def merge_erdos_renyi(p, N, W_1, W_2):
+def merge_erdos_renyi(p, W_1, W_2):
     """ Merge 2 random Erdos Renyi graph represented by their adjacency matrix"""
-    W_new = torch.zeros(2*N, 2*N)
-    perm = np.random.permutation(2*N) #choose a random order for the nodes in the new graph
-    labels = torch.zeros(2*N, 1)
+
+    #W1 and W2 are tensor
+    n_1 = W_1.shape[0]
+    n_2 = W_2.shape[0]
+    W_new = torch.zeros(n_1+n_2, n_1+n_2)
+    perm = np.random.permutation(n_1+n_2) #choose a random order for the nodes in the new graph
+    labels = torch.zeros(n_1+n_2, 1)
 
     #copy the edges of g_1
-    for i in range(N): #nodes of g_1
-        for j in range(N): #nodes of g_1
+    for i in range(n_1): #nodes of g_1
+        for j in range(n_1): #nodes of g_1
             W_new[perm[i]][perm[j]] = W_1[i][j]
 
     #copy the edges of g_2
-    for i in range(N): #nodes of g_2
-        labels[perm[i+N]][0] = 1
-        for j in range(N): #nodes of g_2
-            W_new[perm[i+N]][perm[j+N]] = W_1[i][j]
+    for i in range(n_2): #nodes of g_2
+        labels[perm[i+n_1]][0] = 1
+        for j in range(n_2): #nodes of g_2
+            W_new[perm[i+n_1]][perm[j+n_1]] = W_1[i][j]
 
     #build connections between the 2 graphs
-    for i in range(N): #nodes of g_1
-        for j in range(N, 2*N): #nodes of g_2
+    for i in range(n_1): #nodes of g_1
+        for j in range(n_1, n_1+n_2): #nodes of g_2
             r = random.random()
             if r<p:
                 W_new[perm[i]][perm[j]] = 1.
                 W_new[perm[j]][perm[i]] = 1.
 
-    return torch.as_tensor(W_new, dtype = torch.float), labels
+    return W_new, labels
 
 @merge_graphs("BarabasiAlbert")
-def merge_barabasi_albert_netx(p, N, B_1, B_2):
+def merge_barabasi_albert_netx(p, B_1, B_2):
     """ Merge random Barabasi Albert graphs """
     raise ValueError('Generative model {} not supported'
                              .format(self.generative_model))
 
 @merge_graphs("Regular")
-def generate_regular_graph_netx(p, N, B_1, B_2):
+def generate_regular_graph_netx(p, B_1, B_2):
     """ Merge random regular graph """
     raise ValueError('Generative model {} not supported'
                              .format(self.generative_model))
@@ -145,21 +149,32 @@ class Generator(Base_Generator):
     Build a numpy dataset of pairs of (Graph, noisy Graph)
     """
     def __init__(self, name, args):
-        self.generative_model = args['generative_model']
-        self.edge_density = args['edge_density']
         num_examples = args['num_examples_' + name]
-        n_vertices = args['n_vertices']
-        vertex_proba = args['vertex_proba']
-        subfolder_name = 'labels_{}_{}_{}_{}_{}'.format(self.generative_model,
-                                                     num_examples,
-                                                     n_vertices, vertex_proba,
-                                                     self.edge_density)
+
+        self.g_1_generative_model = args['graph_1']['generative_model']
+        self.g_1_edge_density = args['graph_1']['edge_density']
+        n_vertices_1 = args['graph_1']['n_vertices']
+        vertex_proba_1 = args['graph_1']['vertex_proba']
+
+        self.g_2_generative_model = args['graph_2']['generative_model']
+        self.g_2_edge_density = args['graph_2']['edge_density']
+        n_vertices_2 = args['graph_2']['n_vertices']
+        vertex_proba_2 = args['graph_2']['vertex_proba']
+
+        self.merge_generative_model = args['merge_arg']['generative_model']
+        self.merge_edge_density = args['merge_arg']['edge_density']
+
+        subfolder_name = 'labels_{}_{}_{}_{}_{}_{}'.format(num_examples,
+                                                     self.g_1_generative_model, self.g_1_edge_density,
+                                                     self.g_2_generative_model, self.g_2_edge_density,
+                                                     self.merge_edge_density)
         path_dataset = os.path.join(args['path_dataset'],
                                          subfolder_name)
         super().__init__(name, path_dataset, num_examples)
         self.data = []
-        self.constant_n_vertices = (vertex_proba == 1.)
-        self.n_vertices_sampler = torch.distributions.Binomial(n_vertices, vertex_proba)
+        self.constant_n_vertices = (vertex_proba_1==1.) and (vertex_proba_2==1.)
+        self.n_vertices_sampler_1 = torch.distributions.Binomial(n_vertices_1, vertex_proba_1)
+        self.n_vertices_sampler_2 = torch.distributions.Binomial(n_vertices_2, vertex_proba_2)
         
         
         utils.check_dir(self.path_dataset)
@@ -168,17 +183,19 @@ class Generator(Base_Generator):
         """
         Compute pairs (Adjacency, labels of nodes)
         """
-        n_vertices = int(self.n_vertices_sampler.sample().item())
+        n_vertices_1 = int(self.n_vertices_sampler_1.sample().item())
+        n_vertices_2 = int(self.n_vertices_sampler_2.sample().item())
         try:
-            g_1, W_1 = GENERATOR_FUNCTIONS[self.generative_model](self.edge_density, n_vertices)
+            g_1, W_1 = GENERATOR_FUNCTIONS[self.g_1_generative_model](self.g_1_edge_density, n_vertices_1)
         except KeyError:
             raise ValueError('Generative model {} not supported'
-                             .format(self.generative_model))
+                             .format(self.g_1_generative_model))
         try:
-            g_2, W_2 = GENERATOR_FUNCTIONS[self.generative_model](self.edge_density, n_vertices)
+            g_2, W_2 = GENERATOR_FUNCTIONS[self.g_2_generative_model](self.g_2_edge_density, n_vertices_2)
         except KeyError:
             raise ValueError('Generative model {} not supported'
-                             .format(self.generative_model))
-        W_new, labels = MERGE_FUNCTIONS[self.generative_model](self.edge_density, n_vertices, W_1, W_2)
-        B_new = adjacency_matrix_to_tensor_representation(W_new)
+                             .format(self.g_2_generative_model))
+
+        W_new, labels = MERGE_FUNCTIONS[self.merge_generative_model](self.merge_edge_density, W_1, W_2)
+        B_new = adjacency_matrix_to_tensor_representation(W_new) ###
         return B_new, labels

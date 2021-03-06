@@ -8,7 +8,7 @@ import torch
 import torch.backends.cudnn as cudnn
 from toolbox import logger, metrics
 from models import get_model
-from loaders.siamese_loaders import siamese_loader
+from loaders.label_loader import label_loader
 from loaders.data_generator_label import Generator
 from toolbox.optimizer import get_optimizer
 from toolbox.losses import get_criterion
@@ -32,13 +32,12 @@ def set_experiment_name(config, command_name, logger):
 
 @ex.config
 def update_paths(root_dir, name, train_data, test_data):
-    log_dir = "{}/runs/{}/labels_{}_{}_{}_{}/".format(
+    log_dir = "{}/runs/{}/labels_{}_{}_{}_{}_{}/".format(
         root_dir,
         name,
-        train_data["generative_model"],
-        train_data["n_vertices"],
-        train_data["vertex_proba"],
-        train_data["edge_density"]
+        train_data['graph_1']["generative_model"], train_data['graph_1']["edge_density"],
+        train_data['graph_2']["generative_model"], train_data['graph_2']["edge_density"],
+        train_data['merge_arg']["edge_density"]
     )
     path_dataset = train_data["path_dataset"]
     # The two keys below are specific to testing
@@ -141,10 +140,10 @@ def train(cpu, train_data, train, arch, log_dir):
 
     gene_train = Generator("train", train_data)
     gene_train.load_dataset()
-    train_loader = siamese_loader(gene_train, train["batch_size"], gene_train.constant_n_vertices)
+    train_loader = label_loader(gene_train, train["batch_size"], gene_train.constant_n_vertices)
     gene_val = Generator("val", train_data)
     gene_val.load_dataset()
-    val_loader = siamese_loader(gene_val, train["batch_size"], gene_val.constant_n_vertices)
+    val_loader = label_loader(gene_val, train["batch_size"], gene_val.constant_n_vertices)
 
     model = get_model(arch)
 
@@ -245,11 +244,9 @@ def create_key(log_dir, test_data):
     template = "model_{}data_label_{}_{}_{}_{}_{}"
     key = template.format(
         log_dir,
-        test_data["generative_model"],
-        test_data["num_examples_test"],
-        test_data["n_vertices"],
-        test_data["vertex_proba"],
-        test_data["edge_density"],
+        test_data['graph_1']["generative_model"], test_data['graph_1']["edge_density"],
+        test_data['graph_2']["generative_model"], test_data['graph_2']["edge_density"],
+        test_data['merge_arg']["edge_density"]
     )
     return key
 
@@ -270,7 +267,7 @@ def eval(name, cpu, test_data, train, arch, log_dir, model_path, output_filename
 
     gene_test = Generator("test", test_data)
     gene_test.load_dataset()
-    test_loader = siamese_loader(gene_test, train["batch_size"], gene_test.constant_n_vertices)
+    test_loader = label_loader(gene_test, train["batch_size"], gene_test.constant_n_vertices)
     acc, loss = trainer.val_triplet(
         test_loader,
         model,
