@@ -7,6 +7,8 @@ def generateNoiseConfigs(modelConfigFile, noise_array, dumpFolder = "./configs/c
     with open(modelConfigFile) as file:
         doc = yaml.load(file, Loader=yaml.FullLoader)
 
+        doc["train"]["epoch"] = 10
+
         for noise in noise_array:
             doc["train_data"]["noise"] = float(noise)
             doc["test_data"]["noise"] = float(noise)
@@ -15,9 +17,14 @@ def generateNoiseConfigs(modelConfigFile, noise_array, dumpFolder = "./configs/c
                 f.write(fileContent)
 
 def runConfigs(n):
-    os.system(f"salloc -N {n} -n {n} mpirun ./configs/multiprocess")
+    os.system(f"cd configs && make")
+
+    # os.system(f"salloc -N {n} -n {n} mpirun ./configs/multiprocess")
+    # if the previous line didn't work, you can try to execute this line instead
+    os.system(f"salloc -N {n} -n {n} --mem 40000 mpirun ./configs/multiprocess")
 
 if __name__ == "__main__":
-    n = 10
-    generateNoiseConfigs("default_qap.yaml", np.linspace(0.0, 0.3, num=n))
-    runConfigs(n)
+    n_samples = 10
+    n_machines = 10
+    # generateNoiseConfigs("default_qap.yaml", np.linspace(0.0, 0.3, num=n_samples))
+    runConfigs(n_machines)

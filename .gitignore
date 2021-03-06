@@ -9,8 +9,12 @@ dataset/
 downloads/
 runs/
 .vscode/
+
 configs/configs_to_run/*
+!configs/configs_to_run/.gitkeep
 configs/configs_computed/*
+!configs/configs_computed/.gitkeep
+configs/multiprocess
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
