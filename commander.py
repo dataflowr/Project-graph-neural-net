@@ -126,8 +126,7 @@ def save_checkpoint(state, is_best, log_dir, filename="checkpoint.pth.tar"):
 
 @ex.command
 def train(cpu, train_data, train, arch, log_dir):
-    """ Main func.
-    """
+    """Main func."""
     global best_score, best_epoch
     best_score, best_epoch = -1, -1
     use_cuda = not cpu and torch.cuda.is_available()
@@ -150,26 +149,6 @@ def train(cpu, train_data, train, arch, log_dir):
 
     model = get_model(arch)
 
-    # print(model)
-
-    # for param in model.node_embedder.base_model.reg_blocks[0].mlp1.convs[0].parameters():
-    #     param.requires_grad = False
-
-    # for param in model.node_embedder.base_model.reg_blocks[0].mlp2.convs[0].parameters():
-    #     param.requires_grad = False
-
-    # for param in model.node_embedder.base_model.reg_blocks[0].mlp3.convs[0].parameters():
-    #     param.requires_grad = False
-
-    # for param in model.node_embedder.base_model.reg_blocks[1].mlp1.convs[0].parameters():
-    #     param.requires_grad = False
-
-    # for param in model.node_embedder.base_model.reg_blocks[1].mlp2.convs[0].parameters():
-    #     param.requires_grad = False
-
-    # for param in model.node_embedder.base_model.reg_blocks[1].mlp3.convs[0].parameters():
-    #     param.requires_grad = False
-
     optimizer, scheduler = get_optimizer(train, model)
     criterion = get_criterion(device, train["loss_reduction"])
 
@@ -186,7 +165,7 @@ def train(cpu, train_data, train, arch, log_dir):
             exp_logger,
             device,
             epoch,
-            eval_score=metrics.accuracy_max,
+            eval_score=metrics.accuracy_linear_assignment,
             print_freq=train["print_freq"],
         )
 

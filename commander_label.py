@@ -8,10 +8,10 @@ import torch
 import torch.backends.cudnn as cudnn
 from toolbox import logger, metrics
 from models import get_model
-from loaders.label_loader import label_loader
+from loaders.label_loaders import label_loader
 from loaders.data_generator_label import Generator
 from toolbox.optimizer import get_optimizer
-from toolbox.losses import get_criterion
+from toolbox.losses import get_criterion, cluster_loss
 from toolbox import utils
 import trainer as trainer
 
@@ -35,9 +35,11 @@ def update_paths(root_dir, name, train_data, test_data):
     log_dir = "{}/runs/{}/labels_{}_{}_{}_{}_{}/".format(
         root_dir,
         name,
-        train_data['graph_1']["generative_model"], train_data['graph_1']["edge_density"],
-        train_data['graph_2']["generative_model"], train_data['graph_2']["edge_density"],
-        train_data['merge_arg']["edge_density"]
+        train_data["graph_1"]["generative_model"],
+        train_data["graph_1"]["edge_density"],
+        train_data["graph_2"]["generative_model"],
+        train_data["graph_2"]["edge_density"],
+        train_data["merge_arg"]["edge_density"],
     )
     path_dataset = train_data["path_dataset"]
     # The two keys below are specific to testing
@@ -123,8 +125,7 @@ def save_checkpoint(state, is_best, log_dir, filename="checkpoint.pth.tar"):
 
 @ex.command
 def train(cpu, train_data, train, arch, log_dir):
-    """ Main func.
-    """
+    """Main func."""
     global best_score, best_epoch
     best_score, best_epoch = -1, -1
     use_cuda = not cpu and torch.cuda.is_available()
@@ -147,35 +148,15 @@ def train(cpu, train_data, train, arch, log_dir):
 
     model = get_model(arch)
 
-    # print(model)
-
-    # for param in model.node_embedder.base_model.reg_blocks[0].mlp1.convs[0].parameters():
-    #     param.requires_grad = False
-
-    # for param in model.node_embedder.base_model.reg_blocks[0].mlp2.convs[0].parameters():
-    #     param.requires_grad = False
-
-    # for param in model.node_embedder.base_model.reg_blocks[0].mlp3.convs[0].parameters():
-    #     param.requires_grad = False
-
-    # for param in model.node_embedder.base_model.reg_blocks[1].mlp1.convs[0].parameters():
-    #     param.requires_grad = False
-
-    # for param in model.node_embedder.base_model.reg_blocks[1].mlp2.convs[0].parameters():
-    #     param.requires_grad = False
-
-    # for param in model.node_embedder.base_model.reg_blocks[1].mlp3.convs[0].parameters():
-    #     param.requires_grad = False
-
     optimizer, scheduler = get_optimizer(train, model)
-    criterion = get_criterion(device, train["loss_reduction"])
+    criterion = cluster_loss()
 
     model.to(device)
 
     is_best = True
     for epoch in range(train["epoch"]):
         print("Current epoch: ", epoch)
-        trainer.train_triplet(
+        trainer.train_cluster(
             train_loader,
             model,
             criterion,
@@ -183,18 +164,18 @@ def train(cpu, train_data, train, arch, log_dir):
             exp_logger,
             device,
             epoch,
-            eval_score=metrics.accuracy_max,
+            eval_score=None,
             print_freq=train["print_freq"],
         )
 
-        acc, loss = trainer.val_triplet(
+        acc, loss = trainer.val_cluster(
             val_loader,
             model,
             criterion,
             exp_logger,
             device,
             epoch,
-            eval_score=metrics.accuracy_linear_assignment,
+            eval_score=None,
         )
         scheduler.step(loss)
         # remember best acc and save checkpoint
@@ -244,9 +225,11 @@ def create_key(log_dir, test_data):
     template = "model_{}data_label_{}_{}_{}_{}_{}"
     key = template.format(
         log_dir,
-        test_data['graph_1']["generative_model"], test_data['graph_1']["edge_density"],
-        test_data['graph_2']["generative_model"], test_data['graph_2']["edge_density"],
-        test_data['merge_arg']["edge_density"]
+        test_data["graph_1"]["generative_model"],
+        test_data["graph_1"]["edge_density"],
+        test_data["graph_2"]["generative_model"],
+        test_data["graph_2"]["edge_density"],
+        test_data["merge_arg"]["edge_density"],
     )
     return key
 

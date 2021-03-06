@@ -18,7 +18,7 @@ train_data: # Train data related parameters
     vertex_proba: 1. # Parameter of the binomial distribution of vertices
   merge_arg:
     generative_model: ErdosRenyi # so far ErdosRenyi, Regular or BarabasiAlbert
-    edge_density: 0.2
+    edge_density: 0.0
   path_dataset: dataset # Path where datasets are stored
 
 test_data: # Test data related parameters
@@ -27,7 +27,7 @@ test_data: # Test data related parameters
     generative_model: ErdosRenyi # so far ErdosRenyi, Regular or BarabasiAlbert
     edge_density: 0.2
     n_vertices: 25
-    vertex_proba: 0.5 # Parameter of the binomial distribution of vertices
+    vertex_proba: 1. # Parameter of the binomial distribution of vertices
   graph_2:
     generative_model: ErdosRenyi # so far ErdosRenyi, Regular or BarabasiAlbert
     edge_density: 0.2
@@ -35,11 +35,11 @@ test_data: # Test data related parameters
     vertex_proba: 1. # Parameter of the binomial distribution of vertices
   merge_arg:
     generative_model: ErdosRenyi # so far ErdosRenyi, Regular or BarabasiAlbert
-    edge_density: 0.2
+    edge_density: 0.0
   path_dataset: dataset # Path where datasets are stored
 
 train: # Training parameters
-  epoch: 10
+  epoch: 20
   batch_size: 16
   lr: !!float 1e-4
   scheduler_step: 5
@@ -50,14 +50,14 @@ train: # Training parameters
   loss_reduction: mean
 
 arch: # Architecture and model
-  arch: Siamese_Model
+  arch: Similarity_Model
   model_name: Simple_Node_Embedding
   num_blocks: 2
   original_features_num: 2
-  in_features: 64
-  out_features: 64
+  in_features: 128
+  out_features: 128
   depth_of_mlp: 3
-  freeze_mlp: [0,0,0] #number of mlp blocks to freeze in each regular block
+  freeze_mlp: [0, 0, 0] #number of mlp blocks to freeze in each regular block
 
 observers:
   neptune:
