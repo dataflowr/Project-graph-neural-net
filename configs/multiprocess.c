@@ -47,6 +47,12 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+    char programToRun[100] = "commander.py";
+    if (argc > 1)
+    {
+        strcpy(programToRun, argv[1]);
+    }
+
     const char folderConfigFilesToRun[] = "./configs/configs_to_run/";
     const char folderConfigFilesComputed[] = "./configs/configs_computed/";
 
@@ -107,9 +113,12 @@ int main(int argc, char **argv)
         dup2(fileno(stdout), fileno(stderr));
 
         // Starts the training with the current config file
-        char cmd[500] = "python3 commander.py train with ";
+        char cmd[500] = "python3 ";
+        strcat(cmd, programToRun);
+        strcat(cmd, " train with ");
         strcat(cmd, folderConfigFilesToRun);
         strcat(cmd, fileList[i]);
+        printf("%s\n", cmd);
         system(cmd);
 
         // Closes the redirection to the log file

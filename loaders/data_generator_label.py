@@ -194,4 +194,4 @@ class Generator(Base_Generator):
 
         W_new = MERGE_FUNCTIONS[self.merge_generative_model](self.merge_edge_density, W_1, W_2)
         B_new = adjacency_matrix_to_tensor_representation(W_new)  ###
-        return B_new, [n_vertices_1, n_vertices_2]
+        return B_new, torch.tensor([n_vertices_1, n_vertices_2], dtype=torch.int)

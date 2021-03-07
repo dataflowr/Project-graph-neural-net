@@ -305,7 +305,7 @@ def train_cluster(
         if i % print_freq == 0:
             if eval_score is not None:
                 # print(np_out.shape)
-                acc, total_n_vertices = eval_score(output)
+                acc, total_n_vertices = eval_score(output, cluster_sizes)
                 # print(acc_max, n, bs)
                 logger.update_meter("train", "acc", acc, n=total_n_vertices)
             print(
@@ -352,7 +352,7 @@ def val_cluster(
         logger.update_meter(val_test, "loss", loss.data.item(), n=1)
 
         if eval_score is not None:
-            acc, total_n_vertices = eval_score(output)
+            acc, total_n_vertices = eval_score(output, cluster_sizes)
             logger.update_meter(val_test, "acc", acc, n=total_n_vertices)
         if i % print_freq == 0:
             accu = logger.get_meter(val_test, "acc")

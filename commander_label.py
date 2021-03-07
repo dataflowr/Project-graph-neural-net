@@ -1,27 +1,25 @@
+import json
 import os
 import pathlib
 import shutil
-import json
-from sacred import Experiment
 
 import torch
 import torch.backends.cudnn as cudnn
-from toolbox import logger, metrics
-from models import get_model
-from loaders.label_loaders import label_loader
-from loaders.data_generator_label import Generator
-from toolbox.optimizer import get_optimizer
-from toolbox.losses import get_criterion, cluster_loss
-from toolbox import utils
-import trainer as trainer
+from sacred import SETTINGS, Experiment
 
-from sacred import SETTINGS
+import trainer as trainer
+from loaders.data_generator_label import Generator
+from loaders.label_loaders import label_loader
+from models import get_model
+from toolbox import logger, metrics, utils
+from toolbox.losses import *
+from toolbox.optimizer import get_optimizer
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 ### BEGIN Sacred setup
 ex = Experiment()
-ex.add_config("default_label.yaml")
+ex.add_config("default_cluster.yaml")
 
 
 @ex.config_hook
@@ -149,7 +147,10 @@ def train(cpu, train_data, train, arch, log_dir):
     model = get_model(arch)
 
     optimizer, scheduler = get_optimizer(train, model)
-    criterion = cluster_loss()
+    if arch["arch"] == "Simple_Node_Embedding":
+        criterion = cluster_embedding_loss(device=device)
+    elif arch["arch"] == "Similarity_Model":
+        criterion = cluster_similarity_loss()
 
     model.to(device)
 
@@ -164,7 +165,7 @@ def train(cpu, train_data, train, arch, log_dir):
             exp_logger,
             device,
             epoch,
-            eval_score=None,
+            eval_score=metrics.accuracy_cluster_kmeans,
             print_freq=train["print_freq"],
         )
 
@@ -175,7 +176,7 @@ def train(cpu, train_data, train, arch, log_dir):
             exp_logger,
             device,
             epoch,
-            eval_score=None,
+            eval_score=metrics.accuracy_cluster_kmeans,
         )
         scheduler.step(loss)
         # remember best acc and save checkpoint

@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from scipy.optimize import linear_sum_assignment
+from sklearn.cluster import KMeans
 
 
 class Meter(object):
@@ -169,3 +170,27 @@ def compute_f1(raw_scores, target, device):
     y_onehot = torch.zeros_like(raw_scores).to(device)
     y_onehot.scatter_(2, ind, 1)
     return f1_score(y_onehot, target)
+
+
+def accuracy_cluster_kmeans(embeddings, cluster_sizes):
+    """
+    embeddings should be (bs,n,dim_emb) and cluster_sizes (bs,n_clusters) numpy arrays
+    """
+    acc = 0
+    total_n_vertices = 0
+    for X, clusters in zip(embeddings, cluster_sizes):
+        # there are only 2 clusters for now
+        # this code has to be updated to deal with more clusters
+        n_clusters = len(clusters)
+        kmeans = KMeans(n_clusters=n_clusters).fit(X.cpu().detach().numpy())
+        n1 = clusters[0]
+        n = np.int(clusters.sum())
+        correct1 = np.sum(kmeans.labels_[:n1]) + np.sum(1 - kmeans.labels_[n1:])
+        correct2 = np.sum(1 - kmeans.labels_[:n1]) + np.sum(kmeans.labels_[n1:])
+        # here we have correct1 + correct2 == n, we choose the best one
+        # if the prediction is bad/random, we have correct1 ~= correct2 ~= n/2
+        # print(correct1, correct2, n, len(clusters), clusters, kmeans.labels_)
+        acc += max(correct1, correct2)
+        total_n_vertices += n
+
+    return acc, total_n_vertices
