@@ -122,7 +122,7 @@ def save_checkpoint(state, is_best, log_dir, filename="checkpoint.pth.tar"):
 
 
 @ex.command
-def train(cpu, train_data, train, arch, log_dir):
+def train(cpu, load_data, train_data, train, arch, log_dir):
     """Main func."""
     global best_score, best_epoch
     best_score, best_epoch = -1, -1
@@ -138,10 +138,16 @@ def train(cpu, train_data, train, arch, log_dir):
     exp_logger = init_logger()
 
     gene_train = Generator("train", train_data)
-    gene_train.load_dataset()
+    if load_data:
+        gene_train.load_dataset()
+    else:
+        gene_train.create_dataset()
     train_loader = label_loader(gene_train, train["batch_size"], gene_train.constant_n_vertices)
     gene_val = Generator("val", train_data)
-    gene_val.load_dataset()
+    if load_data:
+        gene_val.load_dataset()
+    else:
+        gene_val.create_dataset()
     val_loader = label_loader(gene_val, train["batch_size"], gene_val.constant_n_vertices)
 
     model = get_model(arch)
@@ -236,7 +242,7 @@ def create_key(log_dir, test_data):
 
 
 @ex.command
-def eval(name, cpu, test_data, train, arch, log_dir, model_path, output_filename):
+def eval(name, cpu, load_data, test_data, train, arch, log_dir, model_path, output_filename):
     use_cuda = not cpu and torch.cuda.is_available()
     device = "cuda" if use_cuda else "cpu"
     print("Using device:", device)
@@ -250,7 +256,10 @@ def eval(name, cpu, test_data, train, arch, log_dir, model_path, output_filename
     exp_logger.add_meters("test", metrics.make_meter_matching())
 
     gene_test = Generator("test", test_data)
-    gene_test.load_dataset()
+    if load_data:
+        gene_test.load_dataset()
+    else:
+        gene_test.create_dataset()
     test_loader = label_loader(gene_test, train["batch_size"], gene_test.constant_n_vertices)
     acc, loss = trainer.val_triplet(
         test_loader,

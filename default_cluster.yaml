@@ -2,6 +2,7 @@
 name: Reg-ER-100-nodes-classification
 cpu: No
 root_dir: .
+load_data: Yes
 
 train_data: # Train data related parameters
   num_examples_train: 20000
