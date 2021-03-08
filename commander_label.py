@@ -251,7 +251,10 @@ def eval(name, cpu, load_data, test_data, train, arch, log_dir, model_path, outp
     model.to(device)
     model = load_model(model, device)
 
-    criterion = get_criterion(device, train["loss_reduction"])
+    if arch["arch"] == "Simple_Node_Embedding":
+        criterion = cluster_embedding_loss(device=device)
+    elif arch["arch"] == "Similarity_Model":
+        criterion = cluster_similarity_loss()
     exp_logger = logger.Experiment(name)
     exp_logger.add_meters("test", metrics.make_meter_matching())
 
@@ -261,14 +264,14 @@ def eval(name, cpu, load_data, test_data, train, arch, log_dir, model_path, outp
     else:
         gene_test.create_dataset()
     test_loader = label_loader(gene_test, train["batch_size"], gene_test.constant_n_vertices)
-    acc, loss = trainer.val_triplet(
+    acc, loss = trainer.val_cluster(
         test_loader,
         model,
         criterion,
         exp_logger,
         device,
         epoch=0,
-        eval_score=metrics.accuracy_linear_assignment,
+        eval_score=metrics.accuracy_cluster_kmeans,
         val_test="test",
     )
     key = create_key()
@@ -276,7 +279,13 @@ def eval(name, cpu, load_data, test_data, train, arch, log_dir, model_path, outp
     print("Saving result at: ", filename_test)
     save_to_json(key, acc, loss, filename_test)
 
+@ex.command
+def generate_data(test_data):
+    print(test_data)
+    gene = Generator("test", test_data)
+    gene.load_dataset()
 
 @ex.automain
 def main():
+    """Main does nothing"""
     pass

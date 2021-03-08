@@ -18,12 +18,15 @@ model_path = "runs/Reg-ER-100/QAP_ErdosRenyi_ErdosRenyi_25_1.0_0.05_0.2"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-def get_embeddings(model, g1, g2):
+def get_embeddings(model, g1, g2=None):
     """Take g1, g2 1-batches of graph
     returns embeddings of shape (1,n, embed_dim)"""
     embeddings = []
     handle = model.node_embedder.register_forward_hook(lambda module, inp, outp : embeddings.append(outp))
-    model(g1,g2)
+    if g2 is None :
+        model(g1)
+    else:
+        model(g1,g2)
     handle.remove()
     return embeddings
 

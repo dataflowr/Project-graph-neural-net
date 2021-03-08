@@ -49,6 +49,19 @@ def generate_regular_graph_netx(p, N):
     W = networkx.adjacency_matrix(g).todense()
     return g, torch.as_tensor(W, dtype=torch.float)
 
+@generates("Symmetric")
+def generates_symmetric_netx(p,N):
+    "Generates a graph composed of two identical erdos-reyni graphs, so that there are no differences between the clusters"
+    assert (N%2==0)
+    g1 = networkx.erdos_renyi_graph(N, p)
+    g2 = networkx.erdos_renyi_graph(N, p)
+    g = networkx.disjoint_union(g1,g2)
+    for i in range(N):
+        for j in range(N):
+            if random.random() < p/3 :
+                g.add_edges_from([(i,j+N),(j,i+N)])
+    W =  networkx.adjacency_matrix(g).todense()
+    return g, torch.as_tensor(W, dtype=torch.float)
 
 def adjacency_matrix_to_tensor_representation(W):
     """ Create a tensor B[:,:,1] = W and B[i,i,0] = deg(i)"""
@@ -186,9 +199,13 @@ class Generator(Base_Generator):
         except KeyError:
             raise ValueError("Generative model {} not supported".format(self.g_1_generative_model))
         try:
-            g_2, W_2 = GENERATOR_FUNCTIONS[self.g_2_generative_model](
-                self.g_2_edge_density, n_vertices_2
-            )
+            if n_vertices_2 > 0: 
+                g_2, W_2 = GENERATOR_FUNCTIONS[self.g_2_generative_model](
+                    self.g_2_edge_density, n_vertices_2
+                )
+            else :
+                g_2 = networkx.Graph()
+                W_2 = torch.Tensor()
         except KeyError:
             raise ValueError("Generative model {} not supported".format(self.g_2_generative_model))
 
