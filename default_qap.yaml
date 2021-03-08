@@ -25,7 +25,7 @@ test_data: # Test data related parameters
   path_dataset: dataset # Path where datasets are stored
 
 train: # Training parameters
-  epoch: 10
+  epoch: 3
   batch_size: 16
   lr: !!float 1e-4
   scheduler_step: 5
@@ -45,7 +45,7 @@ arch: # Architecture and model
   out_features: 64
 
   depth_of_mlp: 3
-  freeze_mlp: [0,0,0] #number of mlp blocks to freeze in each regular block
+  freeze_mlp: [0, 0, 0] #number of mlp blocks to freeze in each regular block
 
 observers:
   neptune:

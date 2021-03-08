@@ -53,23 +53,15 @@ def runConfigs(n, pythonScript="commander.py"):
 
 if __name__ == "__main__":
     n_samples = 10
-    n_machines = 30
+    n_machines = 40
     # generateNoiseConfigs("default_qap.yaml", np.linspace(0.0, 0.3, num=n_samples))
-    generateClusterConfigs(
-        "default_cluster.yaml",
-        graph_edge_density=np.concatenate(
-            (
-                np.linspace(0.1, 1.0, num=n_samples),
-                np.linspace(0.3, 1.0, num=n_samples),
-                np.linspace(0.5, 1.0, num=n_samples),
-            ),
-        ),
-        merge_edge_density=np.concatenate(
-            (
-                np.linspace(0.0, 1.0, num=n_samples),
-                np.array([0.6] * n_samples),
-                np.array([0.7] * n_samples),
-            )
-        ),
-    )
+    # generateClusterConfigs(
+    #     "default_cluster.yaml",
+    #     graph_edge_density=np.concatenate(
+    #         [np.linspace(0.1, 1.0, num=n_samples) for _ in range(n_samples + 1)]
+    #     ),
+    #     merge_edge_density=np.concatenate(
+    #         [np.array([float(i) / float(n_samples)] * n_samples) for i in range(n_samples + 1)]
+    #     ),
+    # )
     runConfigs(n_machines, "commander_label.py")
