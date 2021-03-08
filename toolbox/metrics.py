@@ -194,3 +194,36 @@ def accuracy_cluster_kmeans(embeddings, cluster_sizes):
         total_n_vertices += n
 
     return acc, total_n_vertices
+
+
+def accuracy_spectral_cluster_kmeans(tensors, cluster_sizes):
+    """
+    embeddings should be (bs,n,n) and cluster_sizes (bs,n_clusters) numpy arrays
+    """
+    from sklearn.cluster import SpectralClustering
+    import warnings
+
+    acc = 0
+    total_n_vertices = 0
+    for X, clusters in zip(tensors, cluster_sizes):
+        # there are only 2 clusters for now
+        # this code has to be updated to deal with more clusters
+        n_clusters = len(clusters)
+        adj_mat = X[:, :, 1].cpu().detach().numpy()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            clustering = SpectralClustering(
+                n_clusters=n_clusters, assign_labels="discretize", affinity="precomputed"
+            ).fit(adj_mat)
+        n1 = clusters[0]
+        n = np.int(clusters.sum())
+        correct1 = np.sum(clustering.labels_[:n1]) + np.sum(1 - clustering.labels_[n1:])
+        correct2 = np.sum(1 - clustering.labels_[:n1]) + np.sum(clustering.labels_[n1:])
+        # here we have correct1 + correct2 == n, we choose the best one
+        # if the prediction is bad/random, we have correct1 ~= correct2 ~= n/2
+        # print(correct1, correct2, n, len(clusters), clusters, kmeans.labels_)
+        acc += max(correct1, correct2)
+        total_n_vertices += n
+
+    return acc, total_n_vertices

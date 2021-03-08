@@ -48,9 +48,14 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     char programToRun[100] = "commander.py";
+    char cmdToRun[100] = "train";
     if (argc > 1)
     {
         strcpy(programToRun, argv[1]);
+        if (argc > 2)
+        {
+            strcpy(cmdToRun, argv[2]);
+        }
     }
 
     const char folderConfigFilesToRun[] = "./configs/configs_to_run/";
@@ -115,7 +120,9 @@ int main(int argc, char **argv)
         // Starts the training with the current config file
         char cmd[500] = "python3 ";
         strcat(cmd, programToRun);
-        strcat(cmd, " train with ");
+        strcat(cmd, " ");
+        strcat(cmd, cmdToRun);
+        strcat(cmd, " with ");
         strcat(cmd, folderConfigFilesToRun);
         strcat(cmd, fileList[i]);
         printf("%s\n", cmd);

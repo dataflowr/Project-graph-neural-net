@@ -180,21 +180,41 @@ class Generator(Base_Generator):
         n_vertices_1 = int(self.n_vertices_sampler_1.sample().item())
         n_vertices_2 = int(self.n_vertices_sampler_2.sample().item())
         try:
-            d1 = random.uniform(self.g_1_edge_density_range[0], self.g_1_edge_density_range[1])
-            g_1, W_1 = GENERATOR_FUNCTIONS[self.g_1_generative_model](
-                d1, n_vertices_1
-            )
+            if isinstance(self.g_1_edge_density_range, list):
+                if self.g_1_edge_density_range[0] == self.g_1_edge_density_range[1]:
+                    d1 = self.g_1_edge_density_range[0]
+                else:
+                    d1 = random.uniform(
+                        self.g_1_edge_density_range[0], self.g_1_edge_density_range[1]
+                    )
+            else:
+                d1 = self.g_1_edge_density_range
+            g_1, W_1 = GENERATOR_FUNCTIONS[self.g_1_generative_model](d1, n_vertices_1)
         except KeyError:
             raise ValueError("Generative model {} not supported".format(self.g_1_generative_model))
         try:
-            d2 =random.uniform(self.g_2_edge_density_range[0], self.g_2_edge_density_range[1])
-            g_2, W_2 = GENERATOR_FUNCTIONS[self.g_2_generative_model](
-                d2, n_vertices_2
-            )
+            if isinstance(self.g_2_edge_density_range, list):
+                if self.g_2_edge_density_range[0] == self.g_2_edge_density_range[1]:
+                    d2 = self.g_2_edge_density_range[0]
+                else:
+                    d2 = random.uniform(
+                        self.g_2_edge_density_range[0], self.g_2_edge_density_range[1]
+                    )
+            else:
+                d2 = self.g_2_edge_density_range
+            g_2, W_2 = GENERATOR_FUNCTIONS[self.g_2_generative_model](d2, n_vertices_2)
         except KeyError:
             raise ValueError("Generative model {} not supported".format(self.g_2_generative_model))
 
-        dmerge = random.uniform(self.merge_edge_density_range[0], self.merge_edge_density_range[1])
+        if isinstance(self.merge_edge_density_range, list):
+            if self.merge_edge_density_range[0] == self.merge_edge_density_range[1]:
+                dmerge = self.merge_edge_density_range[0]
+            else:
+                dmerge = random.uniform(
+                    self.merge_edge_density_range[0], self.merge_edge_density_range[1]
+                )
+        else:
+            dmerge = self.merge_edge_density_range
         W_new = MERGE_FUNCTIONS[self.merge_generative_model](dmerge, W_1, W_2)
         B_new = adjacency_matrix_to_tensor_representation(W_new)
         return B_new, torch.tensor([n_vertices_1, n_vertices_2], dtype=torch.int)

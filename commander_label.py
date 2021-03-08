@@ -265,18 +265,42 @@ def eval(name, cpu, load_data, test_data, train, arch, log_dir, model_path, outp
         gene_test.create_dataset()
     test_loader = label_loader(gene_test, train["batch_size"], gene_test.constant_n_vertices)
     acc, loss = trainer.val_cluster(
-            test_loader,
-            model,
-            criterion,
-            exp_logger,
-            device,
-            epoch=0,
-            eval_score=metrics.accuracy_cluster_kmeans,
+        test_loader,
+        model,
+        criterion,
+        exp_logger,
+        device,
+        epoch=0,
+        eval_score=metrics.accuracy_cluster_kmeans,
+        val_test="test",
     )
     key = create_key()
     filename_test = os.path.join(log_dir, output_filename)
     print("Saving result at: ", filename_test)
     save_to_json(key, acc, loss, filename_test)
+
+
+@ex.command
+def eval_spectral(name, load_data, train, test_data, log_dir, output_filename):
+    exp_logger = logger.Experiment(name)
+    exp_logger.add_meters("test", metrics.make_meter_matching())
+
+    gene_test = Generator("test", test_data)
+    if load_data:
+        gene_test.load_dataset()
+    else:
+        gene_test.create_dataset()
+    test_loader = label_loader(gene_test, train["batch_size"], gene_test.constant_n_vertices)
+
+    exp_logger.reset_meters("test")
+
+    print_freq = 10
+    for i, (input, cluster_sizes) in enumerate(test_loader):
+        acc, total_n_vertices = metrics.accuracy_spectral_cluster_kmeans(input, cluster_sizes)
+        exp_logger.update_meter("test", "acc", acc, n=total_n_vertices)
+        if i % print_freq:
+            acc = exp_logger.get_meter("test", "acc")
+            print("Test set\t" "Acc {acc.avg:.3f} ({acc.val:.3f})".format(acc=acc))
 
 
 @ex.automain
