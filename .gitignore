@@ -5,6 +5,7 @@
 *.pt
 *.py.swp
 .ipynb_checkpoints/
+.vscode/
 dataset/
 downloads/
 runs/
