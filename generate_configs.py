@@ -26,7 +26,7 @@ def generateClusterConfigs(
         doc = yaml.load(file, Loader=yaml.FullLoader)
 
         doc["load_data"] = False
-        doc["train"]["epoch"] = 10
+        doc["train"]["epoch"] = 15
 
         for d1, d2 in zip(graph_edge_density, merge_edge_density):
             doc["train_data"]["graph_1"]["edge_density"] = float(d1)
@@ -37,9 +37,7 @@ def generateClusterConfigs(
             doc["test_data"]["merge_arg"]["edge_density"] = float(d2)
             fileContent = yaml.dump(doc)
             with open(
-                dumpFolder
-                + modelConfigFile.split(".yaml")[0]
-                + f"_g_edge_dens_{d1:.2f}_i_edge_dens_{d2:.2f}.yaml",
+                dumpFolder + f"cluster__edge_prob__intra_{d1:.2f}_inter_{d2:.2f}.yaml",
                 "w",
             ) as f:
                 f.write(fileContent)
@@ -55,11 +53,23 @@ def runConfigs(n, pythonScript="commander.py"):
 
 if __name__ == "__main__":
     n_samples = 10
-    n_machines = 10
+    n_machines = 30
     # generateNoiseConfigs("default_qap.yaml", np.linspace(0.0, 0.3, num=n_samples))
     generateClusterConfigs(
         "default_cluster.yaml",
-        graph_edge_density=np.linspace(0.1, 1.0, num=n_samples),
-        merge_edge_density=np.linspace(0.05, 0.5, num=n_samples),
+        graph_edge_density=np.concatenate(
+            (
+                np.linspace(0.1, 1.0, num=n_samples),
+                np.linspace(0.3, 1.0, num=n_samples),
+                np.linspace(0.5, 1.0, num=n_samples),
+            ),
+        ),
+        merge_edge_density=np.concatenate(
+            (
+                np.linspace(0.0, 1.0, num=n_samples),
+                np.array([0.6] * n_samples),
+                np.array([0.7] * n_samples),
+            )
+        ),
     )
     runConfigs(n_machines, "commander_label.py")

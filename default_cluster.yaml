@@ -40,7 +40,7 @@ test_data: # Test data related parameters
   path_dataset: dataset # Path where datasets are stored
 
 train: # Training parameters
-  epoch: 20
+  epoch: 10
   batch_size: 16
   lr: !!float 1e-4
   scheduler_step: 5
