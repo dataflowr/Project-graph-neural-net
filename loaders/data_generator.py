@@ -42,6 +42,23 @@ def generate_regular_graph_netx(p, N):
     W = networkx.adjacency_matrix(g).todense()
     return g, torch.as_tensor(W, dtype=torch.float)
 
+@generates("steps")
+def generates_steps_network(p,N):
+    """Generates a graph with 5 groups of nodes of increasing degree"""
+    g = networkx.Graph()
+    g.add_nodes_from(range(N))
+    a=0
+    step = N//5
+    for i in range(5):
+        for j in range(a, a+step):
+            for k in range(0, a+step):
+                if random.random() < p:
+                    g.add_edge(j,k)
+        a+=step
+    W = networkx.adjacency_matrix(g).todense()
+    return g, torch.as_tensor(W, dtype=torch.float)
+
+
 NOISE_FUNCTIONS = {}
 
 def noise(name):
