@@ -5,7 +5,6 @@ from argparse import ArgumentParser
 import os
 
 #graph has the shape (1, n,n, 2) where layer 1 is adjacency
-plt.ion()
 
 def create_graph(graph):
     _, n,m, _ = graph.shape
@@ -26,11 +25,13 @@ def draw_pos_embedding(G, embeds):
 def viz_simil(G, M):
     """Draws the graph as given by similarity matrix M"""
     n=len(M)
-    color = ["red"]*n//2 + ["blue"]*n//2
-    G.set_edge_attributes({(i,j) : {"weight":M[i,j]} for i in range(n) for j in range(n)})
+    color = ["red"]*(n//2) + ["blue"]*(n//2)
+    nx.set_edge_attributes(G,{(i,j) : {"weight":M[i,j]} for i in range(n) for j in range(n)})
     pos = nx.spring_layout(G, weight="weight" )
     nx.draw(G, pos,with_labels=True, node_color=color )
-    plt.draw()
+    print(color)
+    print(M)
+    plt.show()
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -50,7 +51,6 @@ if __name__ == "__main__":
         if args.pos == "embeds":
             draw_pos_embedding(G, embeds)
         if args.pos == "simil":
-            M = np.load(os.path.join(p, "simil.npy"))
+            M = np.load(os.path.join(p, "simil.npy"))[0]
             viz_simil(G,M)
-    input("end")
 
