@@ -8,8 +8,7 @@
 dataset/
 downloads/
 runs/
-.vscode/
-
+embeds/
 configs/configs_to_run/*
 !configs/configs_to_run/.gitkeep
 configs/configs_computed/*
