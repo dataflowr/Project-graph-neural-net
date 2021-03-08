@@ -15,6 +15,8 @@ from toolbox import logger, metrics, utils
 from toolbox.losses import *
 from toolbox.optimizer import get_optimizer
 
+import numpy as np
+
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 ### BEGIN Sacred setup
@@ -242,7 +244,7 @@ def create_key(log_dir, test_data):
 
 
 @ex.command
-def eval(name, cpu, load_data, test_data, train, arch, log_dir, model_path, output_filename):
+def eval(name, cpu, load_data, test_data, train, arch, log_dir, model_path, output_filename, return_result=False):
     use_cuda = not cpu and torch.cuda.is_available()
     device = "cuda" if use_cuda else "cpu"
     print("Using device:", device)
@@ -274,10 +276,12 @@ def eval(name, cpu, load_data, test_data, train, arch, log_dir, model_path, outp
         eval_score=metrics.accuracy_cluster_kmeans,
         val_test="test",
     )
-    key = create_key()
-    filename_test = os.path.join(log_dir, output_filename)
-    print("Saving result at: ", filename_test)
-    save_to_json(key, acc, loss, filename_test)
+    if not return_result:
+        key = create_key()
+        filename_test = os.path.join(log_dir, output_filename)
+        print("Saving result at: ", filename_test)
+        save_to_json(key, acc, loss, filename_test)
+    return acc, loss
 
 @ex.command
 def generate_data(test_data):
@@ -285,7 +289,24 @@ def generate_data(test_data):
     gene = Generator("test", test_data)
     gene.load_dataset()
 
+
+@ex.command
+def serial_symmetric_evaluation(name, cpu, test_data, train, arch, log_dir, model_path, output_filename):
+    acc_t = []
+    loss_t = []
+    noise_t =np.concatenate(
+        ([0], np.exp(np.linspace(np.log(1e-5),np.log(0.5),50)) )
+        )
+    print(noise_t)
+    for noise in noise_t :
+        print(noise)
+        test_data["graph_2"]["edge_density"]=noise
+        acc, loss =  eval(name, cpu, False, test_data, train, arch, log_dir, model_path, output_filename, return_result=True)
+        acc_t.append(acc)
+        loss_t.append(loss)
+    np.save( "sym_result", [noise_t, acc_t, loss_t])
+
 @ex.automain
 def main():
-    """Main does nothing"""
+    print("Main does nothing")
     pass

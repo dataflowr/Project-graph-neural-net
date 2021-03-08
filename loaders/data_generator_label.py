@@ -51,11 +51,11 @@ def generate_regular_graph_netx(p, N):
 
 @generates("Symmetric")
 def generates_symmetric_netx(p,N):
-    "Generates a graph composed of two identical erdos-reyni graphs, so that there are no differences between the clusters"
-    assert (N%2==0)
+    "Does nothing"
+    return
+    #Saved the rest just in case
     g1 = networkx.erdos_renyi_graph(N, p)
-    g2 = networkx.erdos_renyi_graph(N, p)
-    g = networkx.disjoint_union(g1,g2)
+    g = networkx.disjoint_union(g1,g1)
     for i in range(N):
         for j in range(N):
             if random.random() < p/3 :
@@ -109,6 +109,28 @@ def generate_regular_graph_netx(p, B_1, B_2):
     # raise ValueError("Generative model {} not supported".format(self.generative_model))
     raise ValueError("Generative model Regular not supported")
 
+@merge_graphs("Symmetric")
+def merge_symmetric(p, W_1, W_2):
+    """Merges symmetrically"""
+    assert W_1.shape == W_2.shape
+    n,_ = W_1.shape
+    W = np.zeros((2*n,2*n))
+    W[:n,:n] = W_1
+    W[n:,n:] = W_2
+    for i in range(n):
+        for j in range(n):
+            if random.random() < p/2 :
+                W[i,j+n]=W[j+n,i] = W[i+n,j] = W[j, i+n] = 1
+    return torch.as_tensor(W, dtype=torch.float)
+
+def noise_erdos_renyi(g, W, noise, edge_density):
+    n_vertices = len(W)
+    pe1 = noise
+    pe2 = (edge_density*noise)/(1-edge_density)
+    _,noise1 = generate_erdos_renyi_netx(pe1, n_vertices)
+    _,noise2 = generate_erdos_renyi_netx(pe2, n_vertices)
+    W_noise = W*(1-noise1) + (1-W)*noise2
+    return W_noise
 
 class Base_Generator(torch.utils.data.Dataset):
     def __init__(self, name, path_dataset, num_examples):
@@ -135,6 +157,7 @@ class Base_Generator(torch.utils.data.Dataset):
             torch.save(self.data, path)
 
     def create_dataset(self):
+        print(f"Creating dataset in memory with parameters {self.path_dataset}")
         for _ in range(self.num_examples):
             example = self.compute_example()
             self.data.append(example)
@@ -199,16 +222,19 @@ class Generator(Base_Generator):
         except KeyError:
             raise ValueError("Generative model {} not supported".format(self.g_1_generative_model))
         try:
-            if n_vertices_2 > 0: 
+            if self.g_2_generative_model != "Symmetric": 
                 g_2, W_2 = GENERATOR_FUNCTIONS[self.g_2_generative_model](
                     self.g_2_edge_density, n_vertices_2
                 )
-            else :
-                g_2 = networkx.Graph()
-                W_2 = torch.Tensor()
+            else : #make noise 
+                g_2 = g_1.copy()
+                W_2 = noise_erdos_renyi(g_2, W_1, noise=self.g_2_edge_density, edge_density=self.g_1_edge_density)
+
         except KeyError:
             raise ValueError("Generative model {} not supported".format(self.g_2_generative_model))
 
         W_new = MERGE_FUNCTIONS[self.merge_generative_model](self.merge_edge_density, W_1, W_2)
         B_new = adjacency_matrix_to_tensor_representation(W_new)  ###
+        if n_vertices_2 ==0 :
+            n_vertices_1 = n_vertices_2 = n_vertices_1//2
         return B_new, torch.tensor([n_vertices_1, n_vertices_2], dtype=torch.int)

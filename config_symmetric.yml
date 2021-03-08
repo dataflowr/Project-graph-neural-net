@@ -30,12 +30,12 @@ test_data: # Test data related parameters
     n_vertices: 25
     vertex_proba: 1. # Parameter of the binomial distribution of vertices
   graph_2:
-    generative_model: ErdosRenyi # so far ErdosRenyi, Regular or BarabasiAlbert
-    edge_density: 0.5
+    generative_model: Symmetric # so far ErdosRenyi, Regular or BarabasiAlbert
+    edge_density: 0
     n_vertices: 25
     vertex_proba: 1. # Parameter of the binomial distribution of vertices
   merge_arg:
-    generative_model: ErdosRenyi # so far ErdosRenyi, Regular or BarabasiAlbert
+    generative_model: Symmetric # so far ErdosRenyi, Regular or BarabasiAlbert
     edge_density: 0.2
   path_dataset: dataset # Path where datasets are stored
 

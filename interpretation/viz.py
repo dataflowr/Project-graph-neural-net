@@ -23,10 +23,19 @@ def draw_pos_embedding(G, embeds):
     nx.draw(G, embeds, with_labels=True)
     plt.draw()
 
+def viz_simil(G, M):
+    """Draws the graph as given by similarity matrix M"""
+    n=len(M)
+    color = ["red"]*n//2 + ["blue"]*n//2
+    G.set_edge_attributes({(i,j) : {"weight":M[i,j]} for i in range(n) for j in range(n)})
+    pos = nx.spring_layout(G, weight="weight" )
+    nx.draw(G, pos,with_labels=True, node_color=color )
+    plt.draw()
+
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-f", help="Paths to np graph files", required=True, nargs="+")
-    parser.add_argument("-pos", choices=["embeds"], required=True)
+    parser.add_argument("-pos", choices=["embeds", "simil"], required=True)
 
     args = parser.parse_args()
 
@@ -40,4 +49,8 @@ if __name__ == "__main__":
 
         if args.pos == "embeds":
             draw_pos_embedding(G, embeds)
+        if args.pos == "simil":
+            M = np.load(os.path.join(p, "simil.npy"))
+            viz_simil(G,M)
     input("end")
+
