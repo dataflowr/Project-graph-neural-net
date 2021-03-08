@@ -4,6 +4,7 @@
 *.png
 *.pt
 *.py.swp
+*.npy
 .ipynb_checkpoints/
 dataset/
 downloads/
