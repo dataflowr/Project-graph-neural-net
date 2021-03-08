@@ -1,5 +1,5 @@
 ---
-name: Reg-ER-100
+name: Reg-ER-100-0.0.0_freeze_mlp
 cpu: No
 root_dir: .
 
@@ -40,9 +40,12 @@ arch: # Architecture and model
   model_name: Simple_Node_Embedding
   num_blocks: 2
   original_features_num: 2
-  in_features: 64 #was 128 at first
-  out_features: 64 #idem
+
+  in_features: 64
+  out_features: 64
+
   depth_of_mlp: 3
+  freeze_mlp: [0,0,0] #number of mlp blocks to freeze in each regular block
 
 observers:
   neptune:

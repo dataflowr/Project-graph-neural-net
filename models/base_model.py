@@ -4,7 +4,7 @@ from models.layers import RegularBlock, ColumnMaxPooling
 
 
 class BaseModel(nn.Module):
-    def __init__(self, original_features_num, num_blocks, in_features,out_features, depth_of_mlp):
+    def __init__(self, original_features_num, num_blocks, in_features,out_features, depth_of_mlp, freeze_mlp):
         """
         take a batch of graphs (bs, n_vertices, n_vertices, in_features)
         and return a batch of graphs with new features
@@ -17,15 +17,16 @@ class BaseModel(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         self.depth_of_mlp = depth_of_mlp
+        self.freeze_mlp = freeze_mlp
         
         # First part - sequential mlp blocks
         last_layer_features = self.original_features_num
         self.reg_blocks = nn.ModuleList()
-        for _ in range(self.num_blocks-1):
-            mlp_block = RegularBlock(last_layer_features, in_features, self.depth_of_mlp)
+        for i in range(self.num_blocks-1):
+            mlp_block = RegularBlock(last_layer_features, in_features, self.depth_of_mlp, self.freeze_mlp[i])
             self.reg_blocks.append(mlp_block)
             last_layer_features = in_features
-        mlp_block = RegularBlock(in_features,out_features,depth_of_mlp)
+        mlp_block = RegularBlock(in_features,out_features,depth_of_mlp, self.freeze_mlp[self.num_blocks])
         self.reg_blocks.append(mlp_block)
 
     def forward(self, x):
@@ -49,7 +50,7 @@ class BaseModel(nn.Module):
         return x.permute(0,2,3,1)
 
 class Simple_Node_Embedding(nn.Module):
-    def __init__(self, original_features_num, num_blocks, in_features,out_features, depth_of_mlp):
+    def __init__(self, original_features_num, num_blocks, in_features,out_features, depth_of_mlp, freeze_mlp):
         """
         take a batch of graphs (bs, n_vertices, n_vertices, in_features)
         and return a batch of node embedding (bs, n_vertices, out_features)
@@ -62,7 +63,7 @@ class Simple_Node_Embedding(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         self.depth_of_mlp =depth_of_mlp
-        self.base_model = BaseModel(original_features_num, num_blocks, in_features,out_features, depth_of_mlp)
+        self.base_model = BaseModel(original_features_num, num_blocks, in_features,out_features, depth_of_mlp, freeze_mlp)
         self.suffix = ColumnMaxPooling()
 
     def forward(self, x):
@@ -71,7 +72,7 @@ class Simple_Node_Embedding(nn.Module):
         return  x
 
 class Simple_Edge_Embedding(nn.Module):
-    def __init__(self, original_features_num, num_blocks, in_features,out_features, depth_of_mlp):
+    def __init__(self, original_features_num, num_blocks, in_features,out_features, depth_of_mlp, freeze_mlp):
         """
         take a batch of graphs (bs, n_vertices, n_vertices, in_features)
         and return a batch of node embedding (bs, n_vertices, out_features)
@@ -84,7 +85,7 @@ class Simple_Edge_Embedding(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         self.depth_of_mlp =depth_of_mlp
-        self.base_model = BaseModel(original_features_num, num_blocks, in_features,in_features, depth_of_mlp)
+        self.base_model = BaseModel(original_features_num, num_blocks, in_features,in_features, depth_of_mlp, freeze_mlp)
         self.last_mlp = nn.Conv2d(in_features,out_features,kernel_size=1, padding=0, bias=True)
 
     def forward(self, x):

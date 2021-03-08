@@ -1,27 +1,25 @@
+import json
 import os
 import pathlib
 import shutil
-import json
-from sacred import Experiment
 
 import torch
 import torch.backends.cudnn as cudnn
-from toolbox import logger, metrics
-from models import get_model
-from loaders.siamese_loaders import siamese_loader
-from loaders.data_generator import Generator
-from toolbox.optimizer import get_optimizer
-from toolbox.losses import get_criterion
-from toolbox import utils
-import trainer as trainer
+from sacred import SETTINGS, Experiment
 
-from sacred import SETTINGS
+import trainer as trainer
+from loaders.data_generator_label import Generator
+from loaders.label_loaders import label_loader
+from models import get_model
+from toolbox import logger, metrics, utils
+from toolbox.losses import *
+from toolbox.optimizer import get_optimizer
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 ### BEGIN Sacred setup
 ex = Experiment()
-ex.add_config("default_qap.yaml")
+ex.add_config("default_cluster.yaml")
 
 
 @ex.config_hook
@@ -32,15 +30,14 @@ def set_experiment_name(config, command_name, logger):
 
 @ex.config
 def update_paths(root_dir, name, train_data, test_data):
-    log_dir = "{}/runs/{}/QAP_{}_{}_{}_{}_{}_{}/".format(
+    log_dir = "{}/runs/{}/labels_{}_{}_{}_{}_{}/".format(
         root_dir,
         name,
-        train_data["generative_model"],
-        train_data["noise_model"],
-        train_data["n_vertices"],
-        train_data["vertex_proba"],
-        train_data["noise"],
-        train_data["edge_density"],
+        train_data["graph_1"]["generative_model"],
+        train_data["graph_1"]["edge_density"],
+        train_data["graph_2"]["generative_model"],
+        train_data["graph_2"]["edge_density"],
+        train_data["merge_arg"]["edge_density"],
     )
     path_dataset = train_data["path_dataset"]
     # The two keys below are specific to testing
@@ -125,7 +122,7 @@ def save_checkpoint(state, is_best, log_dir, filename="checkpoint.pth.tar"):
 
 
 @ex.command
-def train(cpu, train_data, train, arch, log_dir):
+def train(cpu, load_data, train_data, train, arch, log_dir):
     """Main func."""
     global best_score, best_epoch
     best_score, best_epoch = -1, -1
@@ -141,23 +138,32 @@ def train(cpu, train_data, train, arch, log_dir):
     exp_logger = init_logger()
 
     gene_train = Generator("train", train_data)
-    gene_train.load_dataset()
-    train_loader = siamese_loader(gene_train, train["batch_size"], gene_train.constant_n_vertices)
+    if load_data:
+        gene_train.load_dataset()
+    else:
+        gene_train.create_dataset()
+    train_loader = label_loader(gene_train, train["batch_size"], gene_train.constant_n_vertices)
     gene_val = Generator("val", train_data)
-    gene_val.load_dataset()
-    val_loader = siamese_loader(gene_val, train["batch_size"], gene_val.constant_n_vertices)
+    if load_data:
+        gene_val.load_dataset()
+    else:
+        gene_val.create_dataset()
+    val_loader = label_loader(gene_val, train["batch_size"], gene_val.constant_n_vertices)
 
     model = get_model(arch)
 
     optimizer, scheduler = get_optimizer(train, model)
-    criterion = get_criterion(device, train["loss_reduction"])
+    if arch["arch"] == "Simple_Node_Embedding":
+        criterion = cluster_embedding_loss(device=device)
+    elif arch["arch"] == "Similarity_Model":
+        criterion = cluster_similarity_loss()
 
     model.to(device)
 
     is_best = True
     for epoch in range(train["epoch"]):
         print("Current epoch: ", epoch)
-        trainer.train_triplet(
+        trainer.train_cluster(
             train_loader,
             model,
             criterion,
@@ -165,18 +171,18 @@ def train(cpu, train_data, train, arch, log_dir):
             exp_logger,
             device,
             epoch,
-            eval_score=metrics.accuracy_linear_assignment,
+            eval_score=metrics.accuracy_cluster_kmeans,
             print_freq=train["print_freq"],
         )
 
-        acc, loss = trainer.val_triplet(
+        acc, loss = trainer.val_cluster(
             val_loader,
             model,
             criterion,
             exp_logger,
             device,
             epoch,
-            eval_score=metrics.accuracy_linear_assignment,
+            eval_score=metrics.accuracy_cluster_kmeans,
         )
         scheduler.step(loss)
         # remember best acc and save checkpoint
@@ -207,7 +213,7 @@ def load_model(model, device, model_path):
         model.load_state_dict(checkpoint["state_dict"])
         return model
     else:
-        raise RuntimeError(f"Model {model_path} does not exist!")
+        raise RuntimeError("Model does not exist!")
 
 
 def save_to_json(key, acc, loss, filename):
@@ -223,37 +229,38 @@ def save_to_json(key, acc, loss, filename):
 
 @ex.capture
 def create_key(log_dir, test_data):
-    template = "model_{}data_QAP_{}_{}_{}_{}_{}_{}_{}"
+    template = "model_{}data_label_{}_{}_{}_{}_{}"
     key = template.format(
         log_dir,
-        test_data["generative_model"],
-        test_data["noise_model"],
-        test_data["num_examples_test"],
-        test_data["n_vertices"],
-        test_data["vertex_proba"],
-        test_data["noise"],
-        test_data["edge_density"],
+        test_data["graph_1"]["generative_model"],
+        test_data["graph_1"]["edge_density"],
+        test_data["graph_2"]["generative_model"],
+        test_data["graph_2"]["edge_density"],
+        test_data["merge_arg"]["edge_density"],
     )
     return key
 
 
 @ex.command
-def eval(name, cpu, test_data, train, arch, log_dir, model_path, output_filename):
+def eval(name, cpu, load_data, test_data, train, arch, log_dir, model_path, output_filename):
     use_cuda = not cpu and torch.cuda.is_available()
     device = "cuda" if use_cuda else "cpu"
     print("Using device:", device)
 
     model = get_model(arch)
     model.to(device)
-    model = load_model(model, device, model_path) # modified to add model_path. may not be a good idea for normal use
+    model = load_model(model, device)
 
     criterion = get_criterion(device, train["loss_reduction"])
     exp_logger = logger.Experiment(name)
     exp_logger.add_meters("test", metrics.make_meter_matching())
 
     gene_test = Generator("test", test_data)
-    gene_test.load_dataset()
-    test_loader = siamese_loader(gene_test, train["batch_size"], gene_test.constant_n_vertices)
+    if load_data:
+        gene_test.load_dataset()
+    else:
+        gene_test.create_dataset()
+    test_loader = label_loader(gene_test, train["batch_size"], gene_test.constant_n_vertices)
     acc, loss = trainer.val_triplet(
         test_loader,
         model,
@@ -269,15 +276,7 @@ def eval(name, cpu, test_data, train, arch, log_dir, model_path, output_filename
     print("Saving result at: ", filename_test)
     save_to_json(key, acc, loss, filename_test)
 
-@ex.command
-def generate_data(test_data):
-    print(test_data)
-    gene = Generator("test", test_data)
-    gene.load_dataset()
 
 @ex.automain
 def main():
-    print("Main does nothing")
     pass
-
-
