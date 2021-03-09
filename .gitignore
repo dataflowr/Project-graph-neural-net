@@ -1,7 +1,7 @@
 #Custom
 *.np
 *.npz
-*.png
+# *.png
 *.pt
 *.py.swp
 .ipynb_checkpoints/

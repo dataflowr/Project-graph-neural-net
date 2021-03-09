@@ -1,4 +1,6 @@
-# Expressive Power of Invariant and Equivaraint Graph Neural Networks
+# Expressive Power of Invariant and Equivariant Graph Neural Networks
+
+This repository aims at using powerful GNN (2-FGNN) on two different problems: graph alignment problem and node clustering.
 
 In this repository, we show how to use powerful GNN (2-FGNN) to solve a graph alignment problem. This code was used to derive the practical results in the following paper:
 
@@ -64,6 +66,29 @@ To cite our paper:
 }
 ```
 
+## Problem: node clustering
+
+![](images/graph_clustering_problem.png)
+
+## Training GNN for the node clustering problem
+
+For the training of our GNN, we generate synthetic datasets as follows: first sample two graphs. Then we join the two graphs by adding with a probability p every edges between the nodes of the two graphs. We obtain then a dataset of graphs for which we know the original clusters. We then use a node embedder E as shown below and compute a similarity matrix EE^T. The GNN is trained to maximize the similarity between nodes from the same cluster, and to minimize the similarity between nodes from different cluster.
+In order to mesure the accuracy of the model, we can use a k-means algorithm to get clusters from EE^T and then compare them with the original ones.
+
+![](images/similarity_net.png)
+
+## Hyperparameter optimisation
+
+![](images/acc_hyperpatam.png)
+
+## Results
+
+![](images/clustering_sample_result.png)
+![](images/acc_0.9_0.7.png)
+![](images/acc_edge_prob_ep_14.png)
+![](images/acc_global_edge_prob.png)
+![](images/acc_spectral.png)
+
 ## Overview of the code
 
 ### Project structure
@@ -103,7 +128,7 @@ pip install -r requirements.txt
 
 ## Training
 
-Run the main file `commander.py` with the command `train`
+Run the main file `commander.py` with the command `train` for the graph alignment problem. For the node clustering, replace `commander.py` par `commander_label.py`.
 
 ```
 python commander.py train
