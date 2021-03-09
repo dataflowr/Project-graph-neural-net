@@ -1,0 +1,8 @@
+- Save graphs 
+- Load model
+- Get node embeddings
+    - get a graph 
+- t-SNE the embeddings
+- display this
+    - Draw graphs with positions in R2
+    - Color R2, draw graph with "natural"positions and color

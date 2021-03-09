@@ -1,10 +1,21 @@
 #Custom
 *.np
 *.npz
-*.png
+# *.png
 *.pt
 *.py.swp
+*.npy
 .ipynb_checkpoints/
+.vscode/
+dataset/
+downloads/
+runs/
+embeds/
+configs/configs_to_run/*
+!configs/configs_to_run/.gitkeep
+configs/configs_computed/*
+!configs/configs_computed/.gitkeep
+configs/multiprocess
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
