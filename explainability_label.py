@@ -12,8 +12,10 @@ import os
 import torch
 from sklearn.manifold import TSNE
 import numpy as np
+from toolbox.metrics import accuracy_cluster_kmeans
+from toolbox.losses import cluster_similarity_loss
 
-data_path = "dataset/labels_1000_ErdosRenyi_0.5_ErdosRenyi_0.5_0.2/test.pkl"
+data_path = "dataset/labels_1000_ErdosRenyi_0.5_Symmetric_0.009_0.2/test.pkl"
 model_path = "./runs/Reg-ER-100-nodes-classification/labels_ErdosRenyi_0.5_ErdosRenyi_0.5_0.2"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -67,10 +69,14 @@ if __name__ == "__main__":
     g1= get_graphs(data,args.i, device)
     
     e1, sim = embed(g1, model)
+    loss=cluster_similarity_loss()
+    sizes= torch.tensor([[25,25]], dtype=int)
+    print(accuracy_cluster_kmeans(sim,sizes))
+    print(loss(sim, sizes).item())
     #embeddings
-    np.save("embeds/g1/embeds", e1)
+    np.save("embeds/g3/embeds", e1)
     #original graphs
-    np.save("embeds/g1/graph", g1.detach().cpu().numpy())
+    np.save("embeds/g3/graph", g1.detach().cpu().numpy())
     #similarity matrices
-    np.save("embeds/g1/simil", sim.detach().cpu().numpy())
+    np.save("embeds/g3/simil", sim.detach().cpu().numpy())
 
