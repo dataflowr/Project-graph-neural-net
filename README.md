@@ -98,6 +98,7 @@ In order to mesure the accuracy of the model, we can use a k-means algorithm to 
 ├── loaders
 |   └── dataset selector
 |   └── data_generator.py # generating random graphs
+|   └── data_generator_label.py # generating random 2-cluster graphs   
 |   └── test_data_generator.py
 |   └── siamese_loader.py # loading pairs
 ├── models
@@ -105,6 +106,7 @@ In order to mesure the accuracy of the model, we can use a k-means algorithm to 
 |   └── layers.py # equivariant block
 |   └── base_model.py # powerful GNN Graph -> Graph
 |   └── siamese_net.py # GNN to match graphs
+|   └── similarity_net.py # GNN to classifye nodes of a graph
 ├── toolbox
 |   └── optimizer and losses selectors
 |   └── logger.py  # keeping track of most results during training
@@ -113,7 +115,8 @@ In order to mesure the accuracy of the model, we can use a k-means algorithm to 
 |   └── optimizer.py # optimizers
 |   └── utility.py
 |   └── maskedtensor.py # Tensor-like class to handle batches of graphs of different sizes
-├── commander.py # main file from the project serving for calling all necessary functions for training and testing
+├── commander.py # main file from the project of graph alignment serving for calling all necessary functions for training and testing
+├── commander_label.py # main file from the project of nodes classification serving for calling all necessary functions for training and testing
 ├── trainer.py # pipelines for training and validation
 ├── eval.py # testing models
 ```
