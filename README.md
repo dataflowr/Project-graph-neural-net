@@ -90,7 +90,7 @@ Firstly, we trained FGNNs on specific probability pairs (p_intra, p_inter). We f
 
 ![](images/cluster__edge_prob__intra_0.80_inter_0.60.png)
 
-Then we trained FGNNs on specific probability pairs (p_intra, p_inter) generated randomly and plotted their associated validation accuracy in a grid shown below. The model seems very accurate for each probabilities levels, except when the intra and inter probabilities are very close. In order to measure the efficiency of our model, we also plotted the results of the spectral clustering algorithm on our datasets. We found that our model can be as efficient as the spectral algorithm on every probability pairs such that p_inter >= p_intra.
+Then we trained FGNNs on specific probability pairs (p_intra, p_inter) generated randomly and plotted their associated validation accuracy in a grid shown below. The model seems very accurate for each probabilities levels, except when the intra and inter probabilities are very close. In order to measure the efficiency of our model, we also plotted the results of the spectral clustering algorithm on our datasets. We found that our model can be as efficient as the spectral algorithm on every probability pairs such that p_inter <= p_intra.
 
 |                FGNN                 |     Spectral clustering      |
 | :---------------------------------: | :--------------------------: |
@@ -183,10 +183,14 @@ There are two ways of evaluating the models. If you juste ran the training with 
 python commander.py eval with conf.yaml
 ```
 
-You can omit `with conf.yaml` if you are using the default configuartion.
+You can omit `with conf.yaml` if you are using the default configuration.
 
 If you downloaded a model with a config file from here, you can edit the section `test_data` of this config if you wish and then run,
 
 ```
 python commander.py eval with /path/to/config model_path=/path/to/model.pth.tar
 ```
+
+## Multiprocessing
+
+If you have SLURM installed, you can run multiple configuration files with `generate_configs.py`. The method `runConfigs(n, pythonScript, cmd)` from this file will execute every configuration file in the folder `configs/configs_to_run` on the number of machines specified. The logs are then stored in the folder `configs/configs_computed`. You can also generate configuration files with `generate_configs.py` and then run them with `runConfigs`.
