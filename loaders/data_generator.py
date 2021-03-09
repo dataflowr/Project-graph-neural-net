@@ -42,6 +42,37 @@ def generate_regular_graph_netx(p, N):
     W = networkx.adjacency_matrix(g).todense()
     return g, torch.as_tensor(W, dtype=torch.float)
 
+@generates("steps")
+def generates_steps_network(p,N):
+    """Generates a graph with 5 groups of nodes of increasing degree"""
+    g = networkx.Graph()
+    g.add_nodes_from(range(N))
+    a=0
+    step = N//5
+    for i in range(5):
+        for j in range(a, a+step):
+            for k in range(0, a+step):
+                if random.random() < p:
+                    g.add_edge(j,k)
+        a+=step
+    W = networkx.adjacency_matrix(g).todense()
+    return g, torch.as_tensor(W, dtype=torch.float)
+
+@generates("Symmetric")
+def generates_symmetric_netx(p,N):
+    "Generates a graph composed of two identical erdos-reyni graphs, so that there are no differences between the clusters"
+    assert (N%2==0)
+    g1 = networkx.erdos_renyi_graph(N, p)
+    g2 = networkx.erdos_renyi_graph(N, p)
+    g = networkx.disjoint_union(g1,g2)
+    for i in range(N):
+        for j in range(N):
+            if random.random() < p/3 :
+                g.add_edges_from([(i+N,j),(j+N,i)])
+    W =  networkx.adjacency_matrix(g).todense()
+    return g, torch.as_tensor(W, dtype=torch.float)
+
+
 NOISE_FUNCTIONS = {}
 
 def noise(name):
