@@ -75,7 +75,7 @@ Here we generate datasets for this problem by first sampling two graphs and then
 
 ## Training GNN for the node clustering problem
 
-For the training of our GNN, we generate synthetic datasets as follows: first sample two graphs using the Erdos Renyi algorithm with a probability p_intra. Then we join the two graphs by adding with a probability p_inter every edges between the nodes of the two graphs. We obtain then a dataset of graphs for which we know the original clusters. We then use a node embedder E as shown below and compute a similarity matrix EE^T. The GNN is trained to maximize the similarity between nodes from the same cluster, and to minimize the similarity between nodes from different cluster.
+For the training of our GNN, we generate synthetic datasets as follows: first sample two graphs using the Erdos Renyi algorithm with a probability p_intra. Then we join the two graphs by adding with a probability p_inter each edge between the nodes of the two graphs. We obtain then a dataset of graphs for which we know the original clusters. We then use a node embedder E as shown below and compute a similarity matrix EE^T. The GNN is trained to maximize the similarity between nodes from the same cluster, and to minimize the similarity between nodes from different clusters.
 In order to mesure the accuracy of the model, we can use a k-means algorithm to get clusters from EE^T and then compare them with the original ones.
 
 ![](images/similarity_net.png)
@@ -106,7 +106,7 @@ We then tried to evaluate the ability of the model to generalize. We trained one
 
 The model seems able to generalize for probability pairs near the one it was trained and surprisingly on pairs which are symmetric to the ones where it generalizes quite well. However it performs very poorly on pairs that are far from the one it was trained on.
 
-In the below image, we show a 2D representation of the nodes embedding deduced from the similarity matrix EE^T. The clusters were generated using Erdos Renyi algorithm with p_intra=0.5. The clusters were then joined with a probability p_inter=0.2 for each pair of nodes from the two clusters.
+In the image below, we show a 2D representation of the nodes embedding deduced from the similarity matrix EE^T. The clusters were generated using Erdos Renyi algorithm with p_intra=0.5. The clusters were then joined with a probability p_inter=0.2 for each pair of nodes from the two clusters.
 ![](images/clustering_sample_result.png)
 
 ## Overview of the code
