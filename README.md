@@ -68,6 +68,9 @@ To cite our paper:
 
 ## Problem: node clustering
 
+The node clustering problem is the computational problem of determining the cluster associated to each node in a graph.
+Here we generate datasets for this problem by first sampling two graphs and then joining them. The goal is then, given the adjacency matrix, to deduce the original cluster.
+
 ![](images/graph_clustering_problem.png)
 
 ## Training GNN for the node clustering problem
@@ -101,7 +104,7 @@ We then tried to evaluate the ability of the model to generalize. We trained one
 
 ![](images/acc_0.9_0.7.png)
 
-The model seems able to generalize for probability pairs near the one it was trained and surprisingly on pairs which are symetric to the ones where it generalizes quite well. However it performs very poorly on pairs that are far from the one it was trained on.
+The model seems able to generalize for probability pairs near the one it was trained and surprisingly on pairs which are symmetric to the ones where it generalizes quite well. However it performs very poorly on pairs that are far from the one it was trained on.
 
 In the below image, we show a 2D representation of the nodes embedding deduced from the similarity matrix EE^T. The clusters were generated using Erdos Renyi algorithm with p_intra=0.5. The clusters were then joined with a probability p_inter=0.2 for each pair of nodes from the two clusters.
 ![](images/clustering_sample_result.png)
@@ -148,7 +151,7 @@ pip install -r requirements.txt
 
 ## Training
 
-Run the main file `commander.py` with the command `train` for the graph alignment problem. For the node clustering, replace `commander.py` par `commander_label.py`.
+Run the main file `commander.py` with the command `train` for the graph alignment problem. For the node clustering, replace `commander.py` by `commander_label.py`.
 
 ```
 python commander.py train
