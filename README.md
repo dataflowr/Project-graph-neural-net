@@ -87,7 +87,7 @@ Firstly, we trained FGNNs on specific probability pairs (p_intra, p_inter). We f
 
 ![](images/cluster__edge_prob__intra_0.80_inter_0.60.png)
 
-Then we trained FGNNs on specific probability pairs (p_intra, p_inter) and plotted their associated validation accuracy in a grid shown below. In order to measure the efficiency of our model, we also plotted the results of the spectral clustering algorithm on our datasets. We found that our model can be as efficient as the spectral algorithm on every probability pairs such that p_inter >= p_intra.
+Then we trained FGNNs on specific probability pairs (p_intra, p_inter) generated randomly and plotted their associated validation accuracy in a grid shown below. The model seems very accurate for each probabilities levels, except when the intra and inter probabilities are very close. In order to measure the efficiency of our model, we also plotted the results of the spectral clustering algorithm on our datasets. We found that our model can be as efficient as the spectral algorithm on every probability pairs such that p_inter >= p_intra.
 
 |                FGNN                 |     Spectral clustering      |
 | :---------------------------------: | :--------------------------: |
@@ -101,7 +101,7 @@ We then tried to evaluate the ability of the model to generalize. We trained one
 
 ![](images/acc_0.9_0.7.png)
 
-The model seems able to generalize for probability pairs near the one it was trained and surprisingly on pairs which are symetric to the ones where it generalizes quite well.
+The model seems able to generalize for probability pairs near the one it was trained and surprisingly on pairs which are symetric to the ones where it generalizes quite well. However it performs very poorly on pairs that are far from the one it was trained on.
 
 In the below image, we show a 2D representation of the nodes embedding deduced from the similarity matrix EE^T. The clusters were generated using Erdos Renyi algorithm with p_intra=0.5. The clusters were then joined with a probability p_inter=0.2 for each pair of nodes from the two clusters.
 ![](images/clustering_sample_result.png)
