@@ -100,14 +100,14 @@ def merge_erdos_renyi(p, W_1, W_2):
 def merge_barabasi_albert_netx(p, B_1, B_2):
     """ Merge random Barabasi Albert graphs """
     # raise ValueError("Generative model {} not supported".format(self.generative_model))
-    raise ValueError("Generative model BarabasiAlbert not supported")
+    raise ValueError("Merge model BarabasiAlbert not supported")
 
 
 @merge_graphs("Regular")
 def generate_regular_graph_netx(p, B_1, B_2):
     """ Merge random regular graph """
     # raise ValueError("Generative model {} not supported".format(self.generative_model))
-    raise ValueError("Generative model Regular not supported")
+    raise ValueError("Merge model Regular not supported")
 
 @merge_graphs("Symmetric")
 def merge_symmetric(p, W_1, W_2):
@@ -173,32 +173,32 @@ class Base_Generator(torch.utils.data.Dataset):
 
 class Generator(Base_Generator):
     """
-    Build a numpy dataset of pairs of (Graph, noisy Graph)
+    Build a numpy dataset of 2-clustered graph
     """
 
     def __init__(self, name, args):
         num_examples = args["num_examples_" + name]
 
         self.g_1_generative_model = args["graph_1"]["generative_model"]
-        self.g_1_edge_density = args["graph_1"]["edge_density"]
+        self.g_1_edge_density_range = args["graph_1"]["edge_density_range"]
         n_vertices_1 = args["graph_1"]["n_vertices"]
         vertex_proba_1 = args["graph_1"]["vertex_proba"]
 
         self.g_2_generative_model = args["graph_2"]["generative_model"]
-        self.g_2_edge_density = args["graph_2"]["edge_density"]
+        self.g_2_edge_density_range = args["graph_2"]["edge_density_range"]
         n_vertices_2 = args["graph_2"]["n_vertices"]
         vertex_proba_2 = args["graph_2"]["vertex_proba"]
 
         self.merge_generative_model = args["merge_arg"]["generative_model"]
-        self.merge_edge_density = args["merge_arg"]["edge_density"]
+        self.merge_edge_density_range = args["merge_arg"]["edge_density_range"]
 
         subfolder_name = "labels_{}_{}_{}_{}_{}_{}".format(
             num_examples,
             self.g_1_generative_model,
-            self.g_1_edge_density,
+            self.g_1_edge_density_range,
             self.g_2_generative_model,
-            self.g_2_edge_density,
-            self.merge_edge_density,
+            self.g_2_edge_density_range,
+            self.merge_edge_density_range,
         )
         path_dataset = os.path.join(args["path_dataset"], subfolder_name)
         super().__init__(name, path_dataset, num_examples)
@@ -216,25 +216,47 @@ class Generator(Base_Generator):
         n_vertices_1 = int(self.n_vertices_sampler_1.sample().item())
         n_vertices_2 = int(self.n_vertices_sampler_2.sample().item())
         try:
-            g_1, W_1 = GENERATOR_FUNCTIONS[self.g_1_generative_model](
-                self.g_1_edge_density, n_vertices_1
-            )
+            if isinstance(self.g_1_edge_density_range, list):
+                if self.g_1_edge_density_range[0] == self.g_1_edge_density_range[1]:
+                    d1 = self.g_1_edge_density_range[0]
+                else:
+                    d1 = random.uniform(
+                        self.g_1_edge_density_range[0], self.g_1_edge_density_range[1]
+                    )
+            else:
+                d1 = self.g_1_edge_density_range
+            g_1, W_1 = GENERATOR_FUNCTIONS[self.g_1_generative_model](d1, n_vertices_1)
         except KeyError:
             raise ValueError("Generative model {} not supported".format(self.g_1_generative_model))
         try:
+            if isinstance(self.g_2_edge_density_range, list):
+                if self.g_2_edge_density_range[0] == self.g_2_edge_density_range[1]:
+                    d2 = self.g_2_edge_density_range[0]
+                else:
+                    d2 = random.uniform(
+                        self.g_2_edge_density_range[0], self.g_2_edge_density_range[1]
+                    )
+            else:
+                d2 = self.g_2_edge_density_range
             if self.g_2_generative_model != "Symmetric": 
                 g_2, W_2 = GENERATOR_FUNCTIONS[self.g_2_generative_model](
-                    self.g_2_edge_density, n_vertices_2
+                    d2, n_vertices_2
                 )
             else : #make noise 
                 g_2 = g_1.copy()
-                W_2 = noise_erdos_renyi(g_2, W_1, noise=self.g_2_edge_density, edge_density=self.g_1_edge_density)
-
+                W_2 = noise_erdos_renyi(g_2, W_1, noise=d2, edge_density=self.g_1_edge_density)
         except KeyError:
             raise ValueError("Generative model {} not supported".format(self.g_2_generative_model))
 
-        W_new = MERGE_FUNCTIONS[self.merge_generative_model](self.merge_edge_density, W_1, W_2)
-        B_new = adjacency_matrix_to_tensor_representation(W_new)  ###
-        if n_vertices_2 ==0 :
-            n_vertices_1 = n_vertices_2 = n_vertices_1//2
+        if isinstance(self.merge_edge_density_range, list):
+            if self.merge_edge_density_range[0] == self.merge_edge_density_range[1]:
+                dmerge = self.merge_edge_density_range[0]
+            else:
+                dmerge = random.uniform(
+                    self.merge_edge_density_range[0], self.merge_edge_density_range[1]
+                )
+        else:
+            dmerge = self.merge_edge_density_range
+        W_new = MERGE_FUNCTIONS[self.merge_generative_model](dmerge, W_1, W_2)
+        B_new = adjacency_matrix_to_tensor_representation(W_new)
         return B_new, torch.tensor([n_vertices_1, n_vertices_2], dtype=torch.int)

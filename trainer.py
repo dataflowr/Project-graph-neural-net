@@ -1,6 +1,8 @@
-from toolbox import metrics
 import time
+
 import torch
+
+from toolbox import metrics
 
 
 def train_triplet(
@@ -272,24 +274,6 @@ def train_cluster(
 
         input = input.to(device)
         output = model(input)
-
-        # # Debug
-        # if epoch == 5 and i == 1000:
-        #     target = torch.zeros_like(output[0])
-        #     prev = 0
-        #     for n in cluster_sizes[0]:
-        #         target[prev : prev + n, prev : prev + n] = torch.ones(n, n)
-        #         prev = n
-        #     a = output[0].cpu().detach().numpy()
-        #     b = target.cpu().numpy()
-        #     import numpy as np
-
-        #     np.set_printoptions(precision=3)
-        #     print(a)
-        #     print(b)
-        #     print(a.shape, b.shape)
-        #     print(torch.nn.MSELoss(reduction="mean")(output[0], target))
-        #     exit()
 
         loss = criterion(output, cluster_sizes)
         logger.update_meter("train", "loss", loss.data.item(), n=1)

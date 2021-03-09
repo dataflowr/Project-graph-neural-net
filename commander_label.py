@@ -36,10 +36,10 @@ def update_paths(root_dir, name, train_data, test_data):
         root_dir,
         name,
         train_data["graph_1"]["generative_model"],
-        train_data["graph_1"]["edge_density"],
+        train_data["graph_1"]["edge_density_range"],
         train_data["graph_2"]["generative_model"],
-        train_data["graph_2"]["edge_density"],
-        train_data["merge_arg"]["edge_density"],
+        train_data["graph_2"]["edge_density_range"],
+        train_data["merge_arg"]["edge_density_range"],
     )
     path_dataset = train_data["path_dataset"]
     # The two keys below are specific to testing
@@ -235,10 +235,10 @@ def create_key(log_dir, test_data):
     key = template.format(
         log_dir,
         test_data["graph_1"]["generative_model"],
-        test_data["graph_1"]["edge_density"],
+        test_data["graph_1"]["edge_density_range"],
         test_data["graph_2"]["generative_model"],
-        test_data["graph_2"]["edge_density"],
-        test_data["merge_arg"]["edge_density"],
+        test_data["graph_2"]["edge_density_range"],
+        test_data["merge_arg"]["edge_density_range"],
     )
     return key
 
@@ -305,6 +305,29 @@ def serial_symmetric_evaluation(name, cpu, test_data, train, arch, log_dir, mode
         acc_t.append(acc)
         loss_t.append(loss)
     np.save( "sym_result", [noise_t, acc_t, loss_t])
+
+@ex.command
+def eval_spectral(name, load_data, train, test_data, log_dir, output_filename):
+    exp_logger = logger.Experiment(name)
+    exp_logger.add_meters("test", metrics.make_meter_matching())
+
+    gene_test = Generator("test", test_data)
+    if load_data:
+        gene_test.load_dataset()
+    else:
+        gene_test.create_dataset()
+    test_loader = label_loader(gene_test, train["batch_size"], gene_test.constant_n_vertices)
+
+    exp_logger.reset_meters("test")
+
+    print_freq = 10
+    for i, (input, cluster_sizes) in enumerate(test_loader):
+        acc, total_n_vertices = metrics.accuracy_spectral_cluster_kmeans(input, cluster_sizes)
+        exp_logger.update_meter("test", "acc", acc, n=total_n_vertices)
+        if i % print_freq:
+            acc = exp_logger.get_meter("test", "acc")
+            print("Test set\t" "Acc {acc.avg:.3f} ({acc.val:.3f})".format(acc=acc))
+
 
 @ex.automain
 def main():

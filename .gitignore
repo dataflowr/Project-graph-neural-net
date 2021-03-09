@@ -1,11 +1,12 @@
 #Custom
 *.np
 *.npz
-*.png
+# *.png
 *.pt
 *.py.swp
 *.npy
 .ipynb_checkpoints/
+.vscode/
 dataset/
 downloads/
 runs/

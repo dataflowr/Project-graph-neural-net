@@ -1,6 +1,8 @@
-# Expressive Power of Invariant and Equivaraint Graph Neural Networks
+# Expressive Power of Invariant and Equivariant Graph Neural Networks
 
-In this repository, we show how to use powerful GNN (2-FGNN) to solve a graph alignment problem. This code was used to derive the practical results in the following paper:
+This repository aims at using powerful GNN (2-FGNN) on two different problems: graph alignment problem and node clustering.
+
+We first show how to use powerful GNN (2-FGNN) to solve a graph alignment problem. This code was used to derive the practical results in the following paper:
 
 Waiss Azizian, Marc Lelarge. Expressive Power of Invariant and Equivariant Graph Neural Networks, ICLR 2021.
 
@@ -64,6 +66,46 @@ To cite our paper:
 }
 ```
 
+## Problem: node clustering
+
+![](images/graph_clustering_problem.png)
+
+## Training GNN for the node clustering problem
+
+For the training of our GNN, we generate synthetic datasets as follows: first sample two graphs using the Erdos Renyi algorithm with a probability p_intra. Then we join the two graphs by adding with a probability p_inter every edges between the nodes of the two graphs. We obtain then a dataset of graphs for which we know the original clusters. We then use a node embedder E as shown below and compute a similarity matrix EE^T. The GNN is trained to maximize the similarity between nodes from the same cluster, and to minimize the similarity between nodes from different cluster.
+In order to mesure the accuracy of the model, we can use a k-means algorithm to get clusters from EE^T and then compare them with the original ones.
+
+![](images/similarity_net.png)
+
+## Hyperparameter optimization
+
+![](images/acc_hyperparam.png)
+
+## Results
+
+Firstly, we trained FGNNs on specific probability pairs (p_intra, p_inter). We found that, as shown in the image below, with the current hyperparameters in `default_cluster.yaml`, the model is not overfitting our training sets.
+
+![](images/cluster__edge_prob__intra_0.80_inter_0.60.png)
+
+Then we trained FGNNs on specific probability pairs (p_intra, p_inter) generated randomly and plotted their associated validation accuracy in a grid shown below. The model seems very accurate for each probabilities levels, except when the intra and inter probabilities are very close. In order to measure the efficiency of our model, we also plotted the results of the spectral clustering algorithm on our datasets. We found that our model can be as efficient as the spectral algorithm on every probability pairs such that p_inter >= p_intra.
+
+|                FGNN                 |     Spectral clustering      |
+| :---------------------------------: | :--------------------------: |
+| ![](images/acc_edge_prob_ep_14.png) | ![](images/acc_spectral.png) |
+
+However, when we tried to train one FGNN on every pairs, we found that, even if the model has quite good results, the accuracy were not as good as FGNNs trained on specific pairs or the spectral clustering algorithm.
+
+![](images/acc_global_edge_prob.png)
+
+We then tried to evaluate the ability of the model to generalize. We trained one FGNN with p_inter=0.9 and p_intra=0.7, and tested its accuracy on different pairs:
+
+![](images/acc_0.9_0.7.png)
+
+The model seems able to generalize for probability pairs near the one it was trained and surprisingly on pairs which are symetric to the ones where it generalizes quite well. However it performs very poorly on pairs that are far from the one it was trained on.
+
+In the below image, we show a 2D representation of the nodes embedding deduced from the similarity matrix EE^T. The clusters were generated using Erdos Renyi algorithm with p_intra=0.5. The clusters were then joined with a probability p_inter=0.2 for each pair of nodes from the two clusters.
+![](images/clustering_sample_result.png)
+
 ## Overview of the code
 
 ### Project structure
@@ -73,6 +115,7 @@ To cite our paper:
 ├── loaders
 |   └── dataset selector
 |   └── data_generator.py # generating random graphs
+|   └── data_generator_label.py # generating random 2-cluster graphs
 |   └── test_data_generator.py
 |   └── siamese_loader.py # loading pairs
 ├── models
@@ -80,6 +123,7 @@ To cite our paper:
 |   └── layers.py # equivariant block
 |   └── base_model.py # powerful GNN Graph -> Graph
 |   └── siamese_net.py # GNN to match graphs
+|   └── similarity_net.py # GNN to classifye nodes of a graph
 ├── toolbox
 |   └── optimizer and losses selectors
 |   └── logger.py  # keeping track of most results during training
@@ -88,7 +132,8 @@ To cite our paper:
 |   └── optimizer.py # optimizers
 |   └── utility.py
 |   └── maskedtensor.py # Tensor-like class to handle batches of graphs of different sizes
-├── commander.py # main file from the project serving for calling all necessary functions for training and testing
+├── commander.py # main file from the project of graph alignment serving for calling all necessary functions for training and testing
+├── commander_label.py # main file from the project of nodes classification serving for calling all necessary functions for training and testing
 ├── trainer.py # pipelines for training and validation
 ├── eval.py # testing models
 ```
@@ -103,7 +148,7 @@ pip install -r requirements.txt
 
 ## Training
 
-Run the main file `commander.py` with the command `train`
+Run the main file `commander.py` with the command `train` for the graph alignment problem. For the node clustering, replace `commander.py` par `commander_label.py`.
 
 ```
 python commander.py train

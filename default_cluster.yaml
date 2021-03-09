@@ -2,41 +2,41 @@
 name: Reg-ER-100-nodes-classification
 cpu: No
 root_dir: .
-load_data: Yes
+load_data: No
 
 train_data: # Train data related parameters
   num_examples_train: 20000
   num_examples_val: 1000
   graph_1:
     generative_model: ErdosRenyi # so far ErdosRenyi, Regular or BarabasiAlbert
-    edge_density: 0.5
+    edge_density_range: 0.9
     n_vertices: 25
     vertex_proba: 1. # Parameter of the binomial distribution of vertices
   graph_2:
     generative_model: ErdosRenyi # so far ErdosRenyi, Regular or BarabasiAlbert
-    edge_density: 0.5
+    edge_density_range: 0.9
     n_vertices: 25
     vertex_proba: 1. # Parameter of the binomial distribution of vertices
   merge_arg:
     generative_model: ErdosRenyi # so far ErdosRenyi, Regular or BarabasiAlbert
-    edge_density: 0.2
+    edge_density_range: 0.7
   path_dataset: dataset # Path where datasets are stored
 
 test_data: # Test data related parameters
   num_examples_test: 1000
   graph_1:
     generative_model: ErdosRenyi # so far ErdosRenyi, Regular or BarabasiAlbert
-    edge_density: 0.5
+    edge_density_range: [0, 1]
     n_vertices: 25
     vertex_proba: 1. # Parameter of the binomial distribution of vertices
   graph_2:
     generative_model: ErdosRenyi # so far ErdosRenyi, Regular or BarabasiAlbert
-    edge_density: 0.5
+    edge_density_range: [0, 1]
     n_vertices: 25
     vertex_proba: 1. # Parameter of the binomial distribution of vertices
   merge_arg:
     generative_model: ErdosRenyi # so far ErdosRenyi, Regular or BarabasiAlbert
-    edge_density: 0.2
+    edge_density_range: [0, 1]
   path_dataset: dataset # Path where datasets are stored
 
 train: # Training parameters
@@ -54,8 +54,8 @@ arch: # Architecture and model
   arch: Similarity_Model
   # arch: Simple_Node_Embedding
   model_name: Simple_Node_Embedding
-  num_blocks: 2
-  original_features_num: 2
+  num_blocks: 3
+  original_features_num: 2 # can't change this parameter here
   in_features: 64
   out_features: 64
   depth_of_mlp: 3
