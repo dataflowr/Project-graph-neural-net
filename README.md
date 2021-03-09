@@ -83,10 +83,20 @@ In order to mesure the accuracy of the model, we can use a k-means algorithm to 
 
 ## Results
 
+For present the results of our models for different graphs characterized by their intra and inter cluster probabilities.
+
+For a model trained with fix probabilities, the result is very bad on new type of graphs. 
+
 ![](images/clustering_sample_result.png)
+
+If we train the model with graphs generated with random probabilities, the model is very accurate for each rpobabilities levels, except when the intra and inter probabilities are very close.
+
 ![](images/acc_0.9_0.7.png)
 ![](images/acc_edge_prob_ep_14.png)
 ![](images/acc_global_edge_prob.png)
+
+We present the results obtain xith spectral clustering, which is a common method to solve the problem of node classification.
+
 ![](images/acc_spectral.png)
 
 ## Overview of the code
